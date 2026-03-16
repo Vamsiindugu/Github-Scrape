@@ -1,8 +1,10 @@
 from typing import Any
 
 from rich.text import Text
+from rich.panel import Panel
+from rich.box import MINIMAL
 from textual.app import App, ComposeResult
-from textual.containers import Container
+from textual.containers import Container, Vertical, Horizontal
 from textual.reactive import reactive
 from textual.screen import Screen
 from textual.widgets import Footer, Input, Label, Static, Tree
@@ -23,25 +25,96 @@ from github_scrape.utils import parse_github_url
 class HomeScreen(Screen[object]):
     CSS = """
     Screen {
+        background: $panel;
+    }
+    #title-container {
+        width: 100%;
+        height: 12;
         align: center middle;
+        margin: 1 0;
+    }
+    #title-text {
+        width: 100%;
+        content-align: center middle;
+        text-style: bold;
     }
     .input-container {
-        width: 60;
+        width: 70;
         height: auto;
-        padding: 2;
-        border: solid green;
+        align: center middle;
+        padding: 1 2;
+        border: tall $primary;
+        background: $surface;
+        margin: 1 0;
     }
-    Input {
+    #url-input {
         width: 100%;
+        height: 1;
+        margin: 1 0;
+    }
+    #instructions {
+        width: 70;
+        align: center middle;
+        text-style: italic;
+        color: $text-muted;
+        margin: 1 0;
+    }
+    #examples {
+        width: 70;
+        align: center middle;
+        text-style: dim;
+        color: $text-muted;
+        margin: 1 0;
+    }
+    #footer-info {
+        width: 100%;
+        height: 1;
+        dock: bottom;
+        content-align: center middle;
+        text-style: italic;
+        color: $text-muted;
     }
     """
 
     def compose(self) -> ComposeResult:
+        # Enhanced ASCII Art Title with gradient-like styling using Textual Rich markup
+        # Using bold cyan/blue colors to mimic the Gemini CLI blue/violet gradient effect
+        ascii_art = """[bold #58a6ff]
+  ██████╗ ██╗   ██╗ ██████╗ ██████╗  █████╗ ██████╗
+ ██╔════╝ ██║   ██║██╔════╝ ██╔══██╗██╔══██╗██╔══██╗
+ ██║  ███╗██║   ██║██║  ███╗██████╔╝███████║██████╔╝
+ ██║   ██║██║   ██║██║   ██║██╔══██╗██╔══██║██╔══██╗
+ ╚██████╔╝╚██████╔╝╚██████╔╝██║  ██║██║  ██║██████╔╝
+  ╚═════╝  ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝[/bold #58a6ff]
+
+[bold #79c0ff]github-scrape[/bold #79c0ff] [dim]—[/dim] [italic]Download any file or folder from GitHub. No full clones. Just what you need.[/italic]
+"""
+
         yield Container(
-            Label("Paste GitHub URL (Tab to autocomplete https://github.com/)"),
+            Static(
+                ascii_art,
+                id="title-text",
+                classes="title-text"
+            ),
+            classes="title-container",
+            id="title-container"
+        )
+
+        yield Container(
+            Label("[bold]Enter GitHub URL[/bold] [dim](Press Tab to autocomplete https://github.com/)[/dim]"),
             Input(placeholder="owner/repo or full URL", id="url-input"),
+            Label("[dim]Press Enter to browse, ESC to quit[/dim]", classes="instructions", id="instructions"),
             classes="input-container",
         )
+
+        # Examples with better styling
+        yield Static(
+            "[dim]Examples: https://github.com/user/repo | user/repo | https://github.com/user/repo/tree/main/path[/dim]",
+            id="examples"
+        )
+
+        # Footer with additional info
+        yield Static("[dim]github-scrape v0.1.0 | Press Ctrl+C to quit[/dim]", id="footer-info")
         yield Footer()
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
@@ -71,25 +144,59 @@ class HomeScreen(Screen[object]):
 class BrowseScreen(Screen[object]):
     CSS = """
     .header-bar {
-        height: 1;
-        background: $surface;
-        padding: 0 1;
+        height: 3;
+        background: $primary;
+        padding: 1 2;
+        border-bottom: solid $primary-lighten-1;
+        content-align: center middle;
+    }
+    .header-title {
+        text-style: bold;
+        color: $text;
+    }
+    .header-subtitle {
+        text-style: italic;
+        color: $text-muted;
     }
     .search-container {
         height: auto;
         dock: top;
         display: none;
+        padding: 1 2;
+        background: $surface;
+        border-bottom: solid $primary;
     }
     .search-visible {
         display: block;
     }
-    Tree {
+    #file-tree {
         height: 1fr;
+        border: none;
+        margin: 1 0;
+        background: $surface-lighten-1;
     }
     .status-bar {
-        height: 1;
-        background: $surface;
+        height: 3;
+        background: $surface-darken-1;
+        padding: 1 2;
+        border-top: solid $primary;
+        content-align: center middle;
+    }
+    .status-text {
+        text-style: bold;
+    }
+    .tree-node {
         padding: 0 1;
+    }
+    .tree-node:focus {
+        background: $accent;
+        color: $text;
+    }
+    .tree-file {
+        color: $text;
+    }
+    .tree-folder {
+        color: $primary-lighten-1;
     }
     """
 
@@ -138,23 +245,48 @@ class BrowseScreen(Screen[object]):
     def compose(self) -> ComposeResult:
         token = config.get_token()
         token_indicator = "🔑" if token else "🔓"
+
+        # Create header with better formatting
+        header_container = Container(
+            Static(
+                f"{self._owner}/{self._repo}",
+                classes="header-title",
+                id="header-title",
+            ),
+            Static(
+                f"@ {self._branch or 'default'} {token_indicator}",
+                classes="header-subtitle",
+                id="header-subtitle",
+            ),
+            classes="header-bar",
+            id="header-bar",
+        )
+
+        search_container = Container(
+            Input(placeholder="🔍 Fuzzy search files (press '/' to focus)...", id="search-input"),
+            classes="search-container",
+            id="search-container",
+        )
+
+        tree_widget = Tree(label="📁 Files & Folders", id="file-tree")
+        tree_widget.styles.border = ("solid", "$primary")
+        tree_widget.styles.background = "$surface-lighten-1"
+
+        status_container = Container(
+            Static(
+                "0 selected | 0 files | Use arrows/enter/backspace for navigation",
+                classes="status-text",
+                id="status-text",
+            ),
+            classes="status-bar",
+            id="status-bar",
+        )
+
         yield Container(
-            Static(
-                f"{self._owner}/{self._repo} @ {self._branch or 'default'} {token_indicator}",
-                classes="header-bar",
-                id="header-bar",
-            ),
-            Container(
-                Input(placeholder="Fuzzy search files...", id="search-input"),
-                classes="search-container",
-                id="search-container",
-            ),
-            Tree(label="Files", id="file-tree"),
-            Static(
-                "0 selected | 0 files | nav: arrows/enter/backspace",
-                classes="status-bar",
-                id="status-bar",
-            ),
+            header_container,
+            search_container,
+            tree_widget,
+            status_container,
         )
         yield Footer()
 
@@ -186,7 +318,7 @@ class BrowseScreen(Screen[object]):
             return
 
         root = tree.root
-        root.set_label(f"{self._owner}/{self._repo}")
+        root.set_label(f"📂 {self._owner}/{self._repo}")
         root.expand()
 
         for f in self.tree_data.files:
@@ -195,7 +327,13 @@ class BrowseScreen(Screen[object]):
             for i, part in enumerate(parts):
                 is_file = i == len(parts) - 1 and f.type == "blob"
                 icon = self._get_icon(is_file)
-                label = f"[{'x' if f.path in self.selected_files else ' '}] {icon} {part}"
+
+                # Different styling for selected vs unselected
+                if f.path in self.selected_files:
+                    label = f"[bold green]✓[/bold green] {icon} [bold]{part}[/bold]"
+                else:
+                    label = f"[ ] {icon} {part}"
+
                 child_node = None
                 for child in node.children:
                     if child.label:
@@ -210,6 +348,12 @@ class BrowseScreen(Screen[object]):
                 else:
                     node = node.add(part, data=f if is_file else None)
                     node.set_label(Text.from_markup(label))
+
+                    # Apply different styling based on file type
+                    if is_file:
+                        node.set_classes("tree-node tree-file")
+                    else:
+                        node.set_classes("tree-node tree-folder")
 
     def _get_icon(self, is_file: bool) -> str:
         if self.use_emoji:
@@ -371,10 +515,47 @@ class GitHubScrapeTUI(App[object]):
     Screen {
         background: $surface;
     }
+
+    /* Enhanced color scheme - GitHub Dark Theme inspired */
+    $primary: #58a6ff;
+    $primary-lighten-1: #79c0ff;
+    $primary-darken-1: #388bfd;
+    $secondary: #6e7681;
+    $surface: #0d1117;
+    $surface-darken-1: #010409;
+    $surface-lighten-1: #161b22;
+    $surface-lighten-2: #21262d;
+    $panel: #161b22;
+    $accent: #238636;
+    $accent-lighten-1: #2ea043;
+    $accent-warning: #d29922;
+    $accent-danger: #f85149;
+    $text: #c9d1d9;
+    $text-muted: #8b949e;
+
+    /* Scrollbar styling */
+    Tree > .scrollbar-corner {
+        background: $surface;
+    }
+    Tree > .scrollbar-horizontal,
+    Tree > .scrollbar-vertical {
+        tint: $primary 30%;
+    }
+
+    /* Input styling */
+    Input {
+        border: tall $surface-lighten-2;
+        background: $surface-darken-1;
+    }
+    Input:focus {
+        border: tall $primary;
+    }
     """
 
-    TITLE = "github-scrape"
+    TITLE = "github-scrape - Advanced GitHub File Browser"
+    SUB_TITLE = "Download files from GitHub without cloning entire repositories"
     SCREENS = {"home": HomeScreen}
 
     def on_mount(self) -> None:
+        self.title = self.TITLE
         self.push_screen("home")

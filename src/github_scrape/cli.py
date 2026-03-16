@@ -5,6 +5,8 @@ from typing import Any
 import typer
 from rich.console import Console
 from rich.table import Table
+from rich.panel import Panel
+from rich.text import Text
 
 from github_scrape import config
 from github_scrape.tui import BrowseScreen, GitHubScrapeTUI
@@ -95,12 +97,27 @@ def main(
 
         os.environ["GITHUB_SCRAPE_TOKEN"] = token
 
+    # Print welcome message with branding
+    # Using GitHub Dark Theme blue colors (#58a6ff -> #79c0ff) similar to Gemini CLI gradient
+    console.print()
+    console.print("[bold #58a6ff]  ██████╗ ██╗   ██╗ ██████╗ ██████╗  █████╗ ██████╗[/bold #58a6ff]")
+    console.print("[bold #58a6ff] ██╔════╝ ██║   ██║██╔════╝ ██╔══██╗██╔══██╗██╔══██╗[/bold #58a6ff]")
+    console.print("[bold #58a6ff] ██║  ███╗██║   ██║██║  ███╗██████╔╝███████║██████╔╝[/bold #58a6ff]")
+    console.print("[bold #58a6ff] ██║   ██║██║   ██║██║   ██║██╔══██╗██╔══██║██╔══██╗[/bold #58a6ff]")
+    console.print("[bold #58a6ff] ╚██████╔╝╚██████╔╝╚██████╔╝██║  ██║██║  ██║██████╔╝[/bold #58a6ff]")
+    console.print("[bold #58a6ff]  ╚═════╝  ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ [/bold #58a6ff]")
+    console.print()
+    console.print("[bold #79c0ff]  github-scrape[/bold #79c0ff] [dim]—[/dim] Download files from GitHub without cloning")
+    console.print()
+
     if url is None:
+        console.print("[italic]Launching interactive browser... Press Ctrl+C to quit anytime[/italic]\n")
         tui_app = GitHubScrapeTUI()
         tui_app.run()
     else:
         try:
             owner, repo, branch, subpath = parse_github_url(url)
+            console.print(f"[green]Opening {owner}/{repo}@{branch or 'default'}...[/green]\n")
             tui_app = GitHubScrapeTUI()
             tui_app.push_screen(
                 BrowseScreen(owner=owner, repo=repo, branch=branch, subpath=subpath)
