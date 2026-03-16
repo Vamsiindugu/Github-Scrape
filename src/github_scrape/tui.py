@@ -1,13 +1,12 @@
+"""Textual TUI for github-scrape - Clean, centered UI like ghgrab."""
+
 from typing import Any
 
-from rich.text import Text
-from rich.panel import Panel
-from rich.box import MINIMAL
 from textual.app import App, ComposeResult
-from textual.containers import Container, Vertical, Horizontal, Grid
+from textual.containers import Container, Vertical, Horizontal, Center
 from textual.reactive import reactive
 from textual.screen import Screen
-from textual.widgets import Footer, Input, Label, Static, Tree
+from textual.widgets import Footer, Input, Static, Tree
 
 from github_scrape import config
 from github_scrape.api import (
@@ -23,118 +22,104 @@ from github_scrape.utils import parse_github_url
 
 
 class HomeScreen(Screen[object]):
+    """Home screen with centered layout matching ghgrab style."""
+
     CSS = """
     Screen {
-        background: $surface;
         align: center middle;
+        background: $surface-darken-1;
     }
-    #main-container {
+
+    #content {
         width: auto;
         height: auto;
         align: center middle;
     }
-    #title-container {
+
+    #ascii-header {
         width: auto;
         height: auto;
-        align: center middle;
-        text-align: center;
-        content-align: center middle;
-    }
-    #title-art {
-        width: auto;
-        height: 6;
         text-align: center;
         content-align: center middle;
         color: #58a6ff;
-    }
-    #title-text {
-        width: auto;
-        height: 1;
-        text-align: center;
-        content-align: center middle;
-        margin-top: 1;
         text-style: bold;
-        color: #79c0ff;
     }
-    #subtitle {
+
+    #tagline {
         width: auto;
-        height: 1;
         text-align: center;
         content-align: center middle;
         margin-top: 1;
+        text-style: dim;
         color: $text-muted;
     }
-    #input-container {
-        width: 70;
+
+    #input-box {
+        width: 76;
         height: auto;
-        align: center middle;
-        padding: 2 3;
-        border: tall $primary;
-        background: $surface-lighten-1;
-        margin: 2 0;
+        border: solid $primary;
+        padding: 1 2;
+        margin-top: 2;
+        background: $surface;
     }
-    #url-input {
-        width: 100%;
-        margin-top: 1;
-    }
+
     #input-label {
         text-align: center;
         content-align: center middle;
-        color: $text;
         text-style: bold;
+        color: $text;
     }
+
+    #url-input {
+        margin-top: 1;
+    }
+
     #input-hint {
         text-align: center;
         content-align: center middle;
-        color: $text-muted;
         margin-top: 1;
+        text-style: dim;
+        color: $text-muted;
     }
+
     #examples {
-        width: 70;
+        width: 76;
         text-align: center;
         content-align: center middle;
-        color: $text-muted;
         margin-top: 1;
-        text-style: italic;
+        text-style: dim;
+        color: $text-muted;
     }
+
     #footer-info {
         width: 100%;
-        height: auto;
         dock: bottom;
         text-align: center;
         content-align: center middle;
-        text-style: italic;
-        color: $text-muted;
+        text-style: dim;
         padding: 1 0;
+        color: $text-muted;
     }
     """
 
     def compose(self) -> ComposeResult:
-        # Clean ASCII Art - centered like ghgrab
+        # Clean ASCII art - using Rich markup for coloring
         ascii_art = """[bold #58a6ff]
-  ██████╗ ██╗   ██╗ ██████╗ ██████╗  █████╗ ██████╗
- ██╔════╝ ██║   ██║██╔════╝ ██╔══██╗██╔══██╗██╔══██╗
- ██║  ███╗██║   ██║██║  ███╗██████╔╝███████║██████╔╝
- ██║   ██║██║   ██║██║   ██║██╔══██╗██╔══██║██╔══██╗
- ╚██████╔╝╚██████╔╝╚██████╔╝██║  ██║██║  ██║██████╔╝
-  ╚═════╝  ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ [/bold #58a6ff]"""
+ ██████╗ ██╗████████╗██╗ ██╗██╗ ██╗██████╗ ███████╗ ██████╗██████╗ █████╗ ██████╗ ███████╗
+██╔════╝ ██║╚══██╔══╝██║ ██║██║ ██║██╔══██╗ ██╔════╝██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝
+██║ ███╗██║ ██║ ███████║██║ ██║██████╔╝ ███████╗██║ ██████╔╝███████║██████╔╝█████╗
+██║ ██║██║ ██║ ██╔══██║██║ ██║██╔══██╗ ╚════██║██║ ██╔══██╗██╔══██║██╔═══╝ ██╔══╝
+╚██████╔╝██║ ██║ ██║ ██║╚██████╔╝██████╔╝ ███████║╚██████╗██║ ██║██║ ██║██║ ███████╗
+ ╚═════╝ ╚═╝ ╚═╝ ╚═╝ ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝ ╚═════╝╚═╝ ╚═╝╚═╝ ╚═╝╚═╝ ╚══════╝[/bold #58a6ff]"""
 
-        # Main vertical container
-        with Vertical(id="main-container"):
-            # Title section - centered
-            with Container(id="title-container"):
-                yield Static(ascii_art, id="title-art")
-                yield Static(
-                    "github-scrape",
-                    id="title-text"
-                )
-                yield Static(
-                    "Download any file or folder from GitHub. No full clones.",
-                    id="subtitle"
-                )
+        with Vertical(id="content"):
+            yield Static(ascii_art, id="ascii-header")
+            yield Static(
+                "github-scrape — Download any file or folder from GitHub. No full clones.",
+                id="tagline"
+            )
 
-            # Input section - centered box
-            with Container(id="input-container"):
+            with Container(id="input-box"):
                 yield Static("Enter GitHub URL", id="input-label")
                 yield Input(
                     placeholder="owner/repo or full URL",
@@ -145,13 +130,11 @@ class HomeScreen(Screen[object]):
                     id="input-hint"
                 )
 
-            # Examples - centered below input
             yield Static(
-                "owner/repo | https://github.com/user/repo | https://github.com/user/repo/tree/main/path",
+                "Examples: owner/repo | https://github.com/user/repo | https://github.com/user/repo/tree/main/path",
                 id="examples"
             )
 
-        # Footer
         yield Static(
             "github-scrape v0.1.0 | Press ESC or Ctrl+C to quit",
             id="footer-info"
@@ -159,10 +142,12 @@ class HomeScreen(Screen[object]):
         yield Footer()
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
+        """Handle URL submission."""
         if event.input.id == "url-input":
             self._handle_url(event.value)
 
     def on_key(self, event: Any) -> None:
+        """Handle Tab key for autocomplete."""
         if event.key == "tab":
             input_widget = self.query_one("#url-input", Input)
             if not input_widget.value:
@@ -173,6 +158,7 @@ class HomeScreen(Screen[object]):
             event.stop()
 
     def _handle_url(self, url: str) -> None:
+        """Parse URL and navigate to BrowseScreen."""
         try:
             owner, repo, branch, subpath = parse_github_url(url)
             self.app.push_screen(
@@ -183,54 +169,62 @@ class HomeScreen(Screen[object]):
 
 
 class BrowseScreen(Screen[object]):
+    """File browser screen with tree view."""
+
     CSS = """
-    .header-bar {
-        height: 3;
-        background: $primary-darken-1;
-        padding: 1 2;
-        content-align: center middle;
-        text-align: center;
-        border-bottom: solid $primary;
+    Screen {
+        background: $surface-darken-1;
     }
-    .header-title {
+
+    #header-bar {
+        width: 100%;
+        height: 3;
+        dock: top;
+        background: $primary-darken-1;
+        border-bottom: solid $primary;
+        text-align: center;
+        content-align: center middle;
+    }
+
+    #header-title {
         text-style: bold;
         color: $text;
-        text-align: center;
     }
-    .header-subtitle {
+
+    #header-subtitle {
         color: $text-muted;
-        text-align: center;
     }
-    .search-container {
+
+    #search-container {
+        width: 100%;
         height: auto;
         dock: top;
         display: none;
-        padding: 1 2;
         background: $surface;
         border-bottom: solid $primary;
+        padding: 1 2;
     }
-    .search-visible {
+
+    #search-container.search-visible {
         display: block;
     }
+
     #file-tree {
+        width: 100%;
         height: 1fr;
         border: solid $surface-lighten-2;
         margin: 1;
-        background: $surface-lighten-1;
+        background: $surface;
     }
-    .status-bar {
+
+    #status-bar {
+        width: 100%;
         height: 3;
+        dock: bottom;
         background: $surface-darken-1;
-        padding: 1 2;
         border-top: solid $primary;
-        content-align: center middle;
         text-align: center;
-    }
-    .status-text {
-        text-style: bold;
-    }
-    .tree-node {
-        padding: 0 1;
+        content-align: center middle;
     }
     """
 
@@ -277,66 +271,64 @@ class BrowseScreen(Screen[object]):
         self._current_filter = ""
 
     def compose(self) -> ComposeResult:
+        """Compose the BrowseScreen UI."""
         token = config.get_token()
         token_indicator = "🔓 Using public API"
         if token:
             masked = token[:8] + "***" if len(token) > 8 else token[:4] + "***"
             token_indicator = f"🔑 Token {masked}"
 
-        header_container = Container(
+        yield Container(
             Static(
                 f"{self._owner}/{self._repo}",
-                classes="header-title",
                 id="header-title",
             ),
             Static(
                 f"@{self._branch or 'default'} | {token_indicator}",
-                classes="header-subtitle",
                 id="header-subtitle",
             ),
-            classes="header-bar",
             id="header-bar",
         )
 
-        search_container = Container(
+        yield Container(
             Input(
-                placeholder="🔍  Search files (type to filter)...",
+                placeholder="🔍 Search files (type to filter)...",
                 id="search-input"
             ),
-            classes="search-container",
             id="search-container",
         )
 
-        tree_widget = Tree(label="📁 Files & Folders", id="file-tree")
-
-        status_container = Container(
-            Static(
-                "0 selected | 0 files | Enter to toggle, Space to select, d to download",
-                classes="status-text",
-                id="status-text",
-            ),
-            classes="status-bar",
-            id="status-bar",
+        yield Tree(
+            label="📁 Files & Folders",
+            id="file-tree"
         )
 
         yield Container(
-            header_container,
-            search_container,
-            tree_widget,
-            status_container,
+            Static(
+                "0 selected | 0 files | Enter to toggle, Space to select, d to download",
+                id="status-text",
+            ),
+            id="status-bar",
         )
+
         yield Footer()
 
     async def on_mount(self) -> None:
+        """Load the repository tree on mount."""
         await self._load_tree()
 
     async def _load_tree(self) -> None:
+        """Load tree from GitHub API."""
         token = config.get_token()
         try:
             async with GitHubClient(token) as client:
                 if not self._branch:
-                    self._branch = await client.get_default_branch(self._owner, self._repo)
-                tree = await client.get_tree(self._owner, self._repo, self._branch)
+                    self._branch = await client.get_default_branch(
+                        self._owner, self._repo
+                    )
+                tree = await client.get_tree(
+                    self._owner, self._repo, self._branch
+                )
                 self.tree_data = tree
                 self._populate_tree()
         except NotFoundError as e:
@@ -349,6 +341,7 @@ class BrowseScreen(Screen[object]):
             self.notify(str(e), title="Error", severity="error")
 
     def _populate_tree(self) -> None:
+        """Populate the tree widget with files."""
         tree = self.query_one("#file-tree", Tree)
         tree.clear()
         if not self.tree_data:
@@ -367,13 +360,11 @@ class BrowseScreen(Screen[object]):
                 if f.path in self.selected_files:
                     label = f"✓ {icon} {part}"
                 else:
-                    label = f"  {icon} {part}"
+                    label = f" {icon} {part}"
                 child_node = None
                 for child in node.children:
                     if child.label:
-                        label_str = (
-                            child.label.plain if isinstance(child.label, Text) else str(child.label)
-                        )
+                        label_str = str(child.label)
                         if label_str.endswith(part):
                             child_node = child
                             break
@@ -381,17 +372,17 @@ class BrowseScreen(Screen[object]):
                     node = child_node
                 else:
                     node = node.add(part, data=f if is_file else None)
-                    node.set_label(Text.from_markup(label))
+                from rich.text import Text
+                node.set_label(Text.from_markup(label))
 
     def _get_icon(self, is_file: bool) -> str:
+        """Return icon for file or folder."""
         if self.use_emoji:
             return "📄" if is_file else "📁"
         return "[F]" if is_file else "[D]"
 
-    def on_tree_node_highlighted(self, event: Tree.NodeHighlighted[object]) -> None:
-        pass
-
     def action_toggle_selection(self) -> None:
+        """Toggle selection on current node."""
         tree = self.query_one("#file-tree", Tree)
         node = tree.cursor_node
         if node and node.data:
@@ -405,6 +396,7 @@ class BrowseScreen(Screen[object]):
                 self._populate_tree()
 
     def action_select_all(self) -> None:
+        """Select all visible files."""
         if self.tree_data:
             for f in self.tree_data.files:
                 if f.type == "blob":
@@ -413,11 +405,13 @@ class BrowseScreen(Screen[object]):
             self._populate_tree()
 
     def action_unselect_all(self) -> None:
+        """Unselect all files."""
         self.selected_files.clear()
         self._update_status()
         self._populate_tree()
 
     def action_focus_search(self) -> None:
+        """Show and focus search bar."""
         container = self.query_one("#search-container", Container)
         search_input = self.query_one("#search-input", Input)
         container.add_class("search-visible")
@@ -425,6 +419,7 @@ class BrowseScreen(Screen[object]):
         search_input.focus()
 
     def action_go_back(self) -> None:
+        """Go back or close search."""
         if self._search_visible:
             container = self.query_one("#search-container", Container)
             container.remove_class("search-visible")
@@ -434,41 +429,60 @@ class BrowseScreen(Screen[object]):
             self.app.pop_screen()
 
     def action_toggle_icons(self) -> None:
+        """Toggle between emoji and ASCII icons."""
         self.use_emoji = not self.use_emoji
         self._populate_tree()
 
     def action_scroll_home(self) -> None:
+        """Scroll to top of tree."""
         tree = self.query_one("#file-tree", Tree)
         tree.action_scroll_home()
 
     def action_scroll_end(self) -> None:
+        """Scroll to bottom of tree."""
         tree = self.query_one("#file-tree", Tree)
         tree.action_scroll_end()
 
     def action_preview(self) -> None:
+        """Preview current file."""
         tree = self.query_one("#file-tree", Tree)
         node = tree.cursor_node
         if node and node.data:
-            self.notify("Preview not yet implemented", title="Info", severity="information")
+            self.notify(
+                "Preview not yet implemented",
+                title="Info",
+                severity="information"
+            )
 
     def action_enter_node(self) -> None:
+        """Enter folder or select file."""
         tree = self.query_one("#file-tree", Tree)
         node = tree.cursor_node
         if node:
             if node.children:
                 node.toggle()
             elif node.data:
-                self.notify("Use Space to select files", title="Info", severity="information")
+                self.notify(
+                    "Use Space to select files",
+                    title="Info",
+                    severity="information"
+                )
 
     def action_go_up(self) -> None:
+        """Go to parent folder."""
         tree = self.query_one("#file-tree", Tree)
         node = tree.cursor_node
         if node and node.parent:
             tree.select_node(node.parent)
 
     async def action_download(self) -> None:
+        """Download selected files."""
         if not self.selected_files:
-            self.notify("No files selected", title="Info", severity="information")
+            self.notify(
+                "No files selected",
+                title="Info",
+                severity="information"
+            )
             return
 
         dest = config.get_download_path()
@@ -511,17 +525,24 @@ class BrowseScreen(Screen[object]):
                         )
 
     def _update_status(self) -> None:
+        """Update status bar with selection info."""
+        from textual.widgets import Static
         status = self.query_one("#status-text", Static)
         total = len(self.tree_data.files) if self.tree_data else 0
         selected = len(self.selected_files)
-        status.update(f"{selected} selected | {total} files | Enter to toggle, Space to select, d to download")
+        status.update(
+            f"{selected} selected | {total} files | "
+            "Enter to toggle, Space to select, d to download"
+        )
 
     def on_input_changed(self, event: Input.Changed) -> None:
+        """Filter tree on search input change."""
         if event.input.id == "search-input":
             self._current_filter = event.value
             self._filter_tree(event.value)
 
     def _filter_tree(self, query: str) -> None:
+        """Filter tree based on fuzzy search query."""
         if not query:
             self._populate_tree()
             return
@@ -531,47 +552,50 @@ class BrowseScreen(Screen[object]):
                 for f in self.tree_data.files:
                     score = fuzz.partial_ratio(query.lower(), f.path.lower())
                     if score >= 60:
-                        pass
+                        pass  # TODO: Implement filtering
         except ImportError:
             pass
 
 
 class GitHubScrapeTUI(App[object]):
+    """Main TUI application."""
+
     CSS = """
     Screen {
-        background: $surface;
+        background: $surface-darken-1;
     }
 
-    /* GitHub Dark Theme color scheme */
+    /* GitHub Dark Theme */
     $primary: #58a6ff;
     $primary-lighten-1: #79c0ff;
     $primary-darken-1: #1f6feb;
-    $secondary: #6e7681;
     $surface: #0d1117;
     $surface-darken-1: #0c0e12;
     $surface-lighten-1: #161b22;
     $surface-lighten-2: #21262d;
-    $panel: #161b22;
     $accent: #238636;
-    $accent-lighten-1: #2ea043;
     $accent-warning: #d29922;
     $accent-danger: #f85149;
     $text: #c9d1d9;
     $text-muted: #8b949e;
 
     Input {
-        border: tall $surface-lighten-2;
+        border: solid $surface-lighten-2;
         background: $surface;
     }
     Input:focus {
-        border: tall $primary;
+        border: solid $primary;
+    }
+    Tree:focus {
+        border: solid $primary;
     }
     """
 
-    TITLE = "github-scrape - GitHub File Browser & Downloader"
-    SUB_TITLE = "Quickly download files from GitHub without cloning"
+    TITLE = "github-scrape"
+    SUB_TITLE = "GitHub File Browser & Downloader"
     SCREENS = {"home": HomeScreen}
 
     def on_mount(self) -> None:
+        """Push home screen on mount."""
         self.title = self.TITLE
         self.push_screen("home")
