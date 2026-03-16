@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "github-scrape"
+version = "0.1.0"
+description = "Browse, search, and download files from GitHub repos in your terminal."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.12"
+authors = [{ name = "Vamsi Indugu" }]
+dependencies = [
+    "typer[all]>=0.15.0",
+    "textual>=0.90.0",
+    "httpx>=0.28.0",
+    "rapidfuzz>=3.10.0",
+    "platformdirs>=4.3.0",
+    "tomlkit>=0.13.0",
+    "rich>=13.9.0",
+]
+
+[project.scripts]
+github-scrape = "github_scrape.cli:app"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM", "TCH"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
