@@ -243,21 +243,10 @@ class BrowseScreen(Screen[None]):
         background: $surface;
     }
 
-    #browse-wrapper {
-        width: 100%;
-        height: 100%;
-        align: center middle;
-    }
-
-    #browse-content {
-        width: 90;
-        height: 100%;
-        align: center middle;
-    }
-
     #repo-header {
         width: 100%;
         height: 3;
+        dock: top;
         background: $accent;
         color: $text;
         content-align: center middle;
@@ -269,6 +258,7 @@ class BrowseScreen(Screen[None]):
     #search-container {
         width: 100%;
         height: auto;
+        dock: top;
         display: none;
         padding: 0 1;
     }
@@ -285,12 +275,12 @@ class BrowseScreen(Screen[None]):
         width: 100%;
         height: 1fr;
         padding: 0 1;
-        border: solid $surface-lighten-3;
     }
 
     #status-bar {
         width: 100%;
         height: 1;
+        dock: bottom;
         background: $panel;
         color: $text-muted;
         content-align: center middle;
@@ -325,10 +315,7 @@ class BrowseScreen(Screen[None]):
         yield Static("Loading...", id="repo-header")
         with Container(id="search-container"):
             yield Input(placeholder="Fuzzy search files...", id="search-input")
-        with Middle():
-            with Center():
-                with Vertical(id="browse-content"):
-                    yield Tree("Repository", id="file-tree")
+        yield Tree("Repository", id="file-tree")
         yield Static("Loading repository...", id="status-bar")
         yield Footer()
 
