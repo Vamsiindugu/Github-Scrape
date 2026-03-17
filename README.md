@@ -11,8 +11,7 @@
 
 *A fast, beautiful TUI for cherry-picking exactly what you need from any repository*
 
-<!-- DEMO_PLACEHOLDER: Add your demo.gif here Vamsi -->
-<!-- `![demo](assets/demo.gif)` -->
+![demo](Demo.png)
 
 </div>
 
