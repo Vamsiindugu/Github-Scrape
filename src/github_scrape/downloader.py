@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import os
 import tempfile
-from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -11,7 +10,7 @@ from typing import TYPE_CHECKING
 from github_scrape.api import GitHubAPIError, GitHubClient, RepoFile
 
 if TYPE_CHECKING:
-    pass
+    from collections.abc import Callable
 
 LFS_SIGNATURES = [
     b"version https://git-lfs.github.com",
@@ -39,10 +38,7 @@ class DownloadPlan:
 
 def is_lfs_pointer(content: bytes) -> bool:
     """Check if content is a Git LFS pointer file."""
-    for sig in LFS_SIGNATURES:
-        if content.startswith(sig):
-            return True
-    return False
+    return any(content.startswith(sig) for sig in LFS_SIGNATURES)
 
 
 class Downloader:

@@ -1,6 +1,5 @@
 import asyncio
 import signal
-import sys
 from dataclasses import dataclass
 from typing import Any
 
@@ -9,7 +8,7 @@ from rich.console import Console
 from rich.table import Table
 
 from github_scrape import config
-from github_scrape.tui import BrowseScreen, GitHubScrapeTUI
+from github_scrape.tui import GitHubScrapeTUI
 from github_scrape.utils import parse_github_url
 
 app = typer.Typer(name="github-scrape", help="Browse and download GitHub repo files.")

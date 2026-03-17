@@ -2,7 +2,6 @@ import httpx
 import pytest
 import respx
 from textual.widgets import Input, Tree
-from textual.widgets._tree import TreeNode
 
 from github_scrape.tui import BrowseScreen, GitHubScrapeTUI, HomeScreen
 
@@ -132,13 +131,7 @@ class TestSelectionDisplay:
 
     def test_selection_checkbox_format(self) -> None:
         """Test that selected files show [*] and unselected show [ ]."""
-        from github_scrape.api import RepoFile
-        from rich.text import Text
-
         # Simulate the label format used in _populate_tree
-        file1_path = "src/main.py"
-        file2_path = "README.md"
-
         # Unselected file should show [ ]
         unselected_label = "[ ] 📄 README.md"
         assert "[ ]" in unselected_label
@@ -258,7 +251,10 @@ class TestSearchAndNavigation:
             respx.get("https://api.github.com/repos/owner/repo/git/trees/main?recursive=1").mock(
                 return_value=httpx.Response(
                     200,
-                    json={"tree": [{"path": "README.md", "type": "blob", "size": 100, "sha": "abc"}], "truncated": False},
+                    json={
+                "tree": [{"path": "README.md", "type": "blob", "size": 100, "sha": "abc"}],
+                "truncated": False,
+            },
                 )
             )
             app = GitHubScrapeTUI()

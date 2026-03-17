@@ -4,9 +4,12 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, AsyncIterator
+from typing import TYPE_CHECKING, Any
 
 import httpx
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 logger = logging.getLogger(__name__)
 
@@ -183,7 +186,7 @@ class GitHubClient:
     async def close(self) -> None:
         await self._client.aclose()
 
-    async def __aenter__(self) -> "GitHubClient":
+    async def __aenter__(self) -> GitHubClient:
         return self
 
     async def __aexit__(self, *args: object) -> None:

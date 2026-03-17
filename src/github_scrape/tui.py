@@ -2,34 +2,22 @@
 
 from __future__ import annotations
 
-import asyncio
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any
 
-import httpx
 from rich.text import Text
 from textual import on, work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Center, Container, Horizontal, Middle, Vertical, VerticalScroll
-from textual.css.query import NoMatches
-from textual.message import Message
+from textual.containers import Center, Container, Middle, Vertical, VerticalScroll
 from textual.screen import Screen
-from textual.widget import Widget
 from textual.widgets import (
-    Button,
     Footer,
-    Header,
     Input,
-    Label,
-    ListItem,
-    ListView,
-    LoadingIndicator,
     Static,
     Tree,
 )
-from textual.widgets.tree import TreeNode
 
 from github_scrape.api import (
     AuthError,
@@ -40,9 +28,12 @@ from github_scrape.api import (
     RepoFile,
     RepoTree,
 )
-from github_scrape.config import get_download_path, get_token, mask_token
-from github_scrape.downloader import DownloadResult, Downloader
+from github_scrape.config import get_download_path, get_token
+from github_scrape.downloader import Downloader
 from github_scrape.utils import format_size, parse_github_url
+
+if TYPE_CHECKING:
+    from textual.widgets.tree import TreeNode
 
 TITLE_ART = """[bold #58a6ff]
 
@@ -71,28 +62,26 @@ class HomeScreen(Screen[str]):
     CSS_PATH = "styles/home.tcss"
 
     def compose(self) -> ComposeResult:
-        with Middle():
-            with Center():
-                with Vertical(id="home-content"):
-                    yield Static(TITLE_ART, id="ascii-art")
-                    yield Static(
-                        "Browse, search & download files from GitHub repos",
-                        id="tagline",
-                    )
-                    with Container(id="input-container"):
-                        yield Static("GitHub Repository URL", id="url-prompt")
-                        yield Input(
-                            placeholder="owner/repo or https://github.com/user/repo",
-                            id="url-input",
-                        )
-                        yield Static(
-                            "facebook/react  •  python/cpython",
-                            id="examples",
-                        )
-                    yield Static(
-                        "Enter: Browse  •  Tab: Autocomplete  •  Esc: Quit",
-                        id="hint-text",
-                    )
+        with Middle(), Center(), Vertical(id="home-content"):
+            yield Static(TITLE_ART, id="ascii-art")
+            yield Static(
+                "Browse, search & download files from GitHub repos",
+                id="tagline",
+            )
+            with Container(id="input-container"):
+                yield Static("GitHub Repository URL", id="url-prompt")
+                yield Input(
+                    placeholder="owner/repo or https://github.com/user/repo",
+                    id="url-input",
+                )
+                yield Static(
+                    "facebook/react  •  python/cpython",
+                    id="examples",
+                )
+            yield Static(
+                "Enter: Browse  •  Tab: Autocomplete  •  Esc: Quit",
+                id="hint-text",
+            )
         yield Footer()
 
     def on_mount(self) -> None:
@@ -291,10 +280,7 @@ class BrowseScreen(Screen[None]):
     def _format_node_label(self, repo_file: RepoFile, selected: bool) -> Text:
         check = "[*]" if selected else "[ ]"
 
-        if repo_file.type == "tree":
-            icon = "📁 " if self.emoji_icons else "[D] "
-        else:
-            icon = "📄 " if self.emoji_icons else "[F] "
+        icon = ("📁 " if self.emoji_icons else "[D] ") if repo_file.type == "tree" else "📄 " if self.emoji_icons else "[F] "
 
         name = repo_file.path.split("/")[-1]
         if repo_file.type == "tree":
@@ -488,10 +474,7 @@ class BrowseScreen(Screen[None]):
 
     @work(exclusive=True)
     async def _start_download(self) -> None:
-        if self.cwd_mode:
-            dest = Path.cwd()
-        else:
-            dest = get_download_path()
+        dest = Path.cwd() if self.cwd_mode else get_download_path()
 
         token = self.token_override or get_token()
         client = GitHubClient(token=token)
