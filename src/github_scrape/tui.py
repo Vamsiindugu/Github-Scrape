@@ -336,11 +336,12 @@ class BrowseScreen(Screen[None]):
     def action_toggle_select(self) -> None:
         tree = self.query_one("#file-tree", Tree)
         node = tree.cursor_node
+        cursor_line = getattr(tree, "cursor_line", None)
 
-        # Fallback: try cursor_line if cursor_node is None
-        if node is None:
+        # If cursor_node is the root or has no data, use cursor_line to find the actual item
+        if node is None or node.data is None or node == tree.root:
             try:
-                idx = getattr(tree, "cursor_line", None)
+                idx = cursor_line
                 if idx is not None and hasattr(tree.root, "children"):
                     children = list(tree.root.children)
                     if 0 <= idx < len(children):
@@ -423,6 +424,13 @@ class BrowseScreen(Screen[None]):
             self.current_path.append(folder_name)
             self._build_tree()
             self._update_status()
+
+    def on_key(self, event: Any) -> None:
+        """Handle key events - intercept Space for toggle selection."""
+        if event.key == "space":
+            # Prevent Tree from consuming space
+            event.stop()
+            self.action_toggle_select()
 
     def action_go_back(self) -> None:
         if self.current_path:
