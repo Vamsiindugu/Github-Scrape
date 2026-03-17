@@ -105,12 +105,13 @@ class HomeScreen(Screen[object]):
     def compose(self) -> ComposeResult:
         # Clean ASCII art - using Rich markup for coloring
         ascii_art = """[bold #58a6ff]
- ██████╗ ██╗████████╗██╗ ██╗██╗ ██╗██████╗ ███████╗ ██████╗██████╗ █████╗ ██████╗ ███████╗
-██╔════╝ ██║╚══██╔══╝██║ ██║██║ ██║██╔══██╗ ██╔════╝██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝
-██║ ███╗██║ ██║ ███████║██║ ██║██████╔╝ ███████╗██║ ██████╔╝███████║██████╔╝█████╗
-██║ ██║██║ ██║ ██╔══██║██║ ██║██╔══██╗ ╚════██║██║ ██╔══██╗██╔══██║██╔═══╝ ██╔══╝
-╚██████╔╝██║ ██║ ██║ ██║╚██████╔╝██████╔╝ ███████║╚██████╗██║ ██║██║ ██║██║ ███████╗
- ╚═════╝ ╚═╝ ╚═╝ ╚═╝ ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝ ╚═════╝╚═╝ ╚═╝╚═╝ ╚═╝╚═╝ ╚══════╝[/bold #58a6ff]"""
+ ██████╗ ██╗████████╗██╗  ██╗██╗   ██╗██████╗     ███████╗ ██████╗██████╗  █████╗ ██████╗ ███████╗
+██╔════╝ ██║╚══██╔══╝██║  ██║██║   ██║██╔══██╗    ██╔════╝██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝
+██║  ███╗██║   ██║   ███████║██║   ██║██████╔╝    ███████╗██║     ██████╔╝███████║██████╔╝█████╗  
+██║   ██║██║   ██║   ██╔══██║██║   ██║██╔══██╗    ╚════██║██║     ██╔══██╗██╔══██║██╔═══╝ ██╔══╝  
+╚██████╔╝██║   ██║   ██║  ██║╚██████╔╝██████╔╝    ███████║╚██████╗██║  ██║██║  ██║██║     ███████╗
+ ╚═════╝ ╚═╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚═════╝     ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚══════╝
+                                                                                                [/bold #58a6ff]"""
 
         with Vertical(id="content"):
             yield Static(ascii_art, id="ascii-header")
@@ -176,6 +177,18 @@ class BrowseScreen(Screen[object]):
         background: $surface-darken-1;
     }
 
+    #main-container {
+        width: 100%;
+        height: 100%;
+        align: center middle;
+    }
+
+    #content-wrapper {
+        width: 90;
+        height: auto;
+        align: center middle;
+    }
+
     #header-bar {
         width: 100%;
         height: 3;
@@ -198,7 +211,6 @@ class BrowseScreen(Screen[object]):
     #search-container {
         width: 100%;
         height: auto;
-        dock: top;
         display: none;
         background: $surface;
         border-bottom: solid $primary;
@@ -213,7 +225,7 @@ class BrowseScreen(Screen[object]):
         width: 100%;
         height: 1fr;
         border: solid $surface-lighten-2;
-        margin: 1;
+        margin: 1 0;
         background: $surface;
     }
 
@@ -298,14 +310,16 @@ class BrowseScreen(Screen[object]):
             id="search-container",
         )
 
-        yield Tree(
-            label="📁 Files & Folders",
-            id="file-tree"
-        )
+        with Horizontal(id="main-container"):
+            with Vertical(id="content-wrapper"):
+                yield Tree(
+                    label="📁 Files & Folders",
+                    id="file-tree"
+                )
 
         yield Container(
             Static(
-                "0 selected | 0 files | Enter to toggle, Space to select, d to download",
+                "0 selected | 0 files | Space: Select | d: Download | q: Quit",
                 id="status-text",
             ),
             id="status-bar",
@@ -357,10 +371,11 @@ class BrowseScreen(Screen[object]):
             for i, part in enumerate(parts):
                 is_file = i == len(parts) - 1 and f.type == "blob"
                 icon = self._get_icon(is_file)
+                # Selection indicator: [*] for selected, [ ] for unselected
                 if f.path in self.selected_files:
-                    label = f"✓ {icon} {part}"
+                    label = f"[*] {icon} {part}"
                 else:
-                    label = f" {icon} {part}"
+                    label = f"[ ] {icon} {part}"
                 child_node = None
                 for child in node.children:
                     if child.label:
