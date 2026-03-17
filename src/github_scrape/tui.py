@@ -83,10 +83,8 @@ class HomeScreen(Screen[str]):
     #home-container {
         width: auto;
         height: auto;
-        max-width: 100%;
         align: center middle;
         content-align: center middle;
-        padding: 1 2;
     }
 
     #ascii-art {
@@ -100,49 +98,25 @@ class HomeScreen(Screen[str]):
     }
 
     #tagline {
-        width: 100%;
+        width: auto;
         text-align: center;
         content-align: center middle;
         color: $text-muted;
         margin-bottom: 2;
     }
 
-    #input-box {
-        width: 76;
-        height: auto;
-        border: solid $accent;
-        background: $surface-lighten-1;
-        padding: 1 2;
-        margin-top: 1;
-    }
-
-    #input-label {
-        text-align: center;
-        content-align: center middle;
-        text-style: bold;
-        color: $text;
-        margin-bottom: 1;
-    }
-
     #url-input {
-        width: 100%;
-    }
-
-    #input-hint {
-        text-align: center;
-        content-align: center middle;
-        color: $text-disabled;
-        margin-top: 1;
+        width: 76;
+        margin: 1 0;
     }
 
     #hint-text {
-        width: 100%;
+        width: auto;
         text-align: center;
         content-align: center middle;
         color: $text-disabled;
         margin-top: 1;
     }
-
     """
 
     def compose(self) -> ComposeResult:
@@ -154,18 +128,12 @@ class HomeScreen(Screen[str]):
                         "Browse, search & download files from GitHub repos",
                         id="tagline",
                     )
-                    with Container(id="input-box"):
-                        yield Static("Enter GitHub URL", id="input-label")
-                        yield Input(
-                            placeholder="owner/repo or full URL",
-                            id="url-input",
-                        )
-                        yield Static(
-                            "Tab: Autocomplete https://github.com/",
-                            id="input-hint",
-                        )
+                    yield Input(
+                        placeholder="owner/repo or https://github.com/user/repo",
+                        id="url-input",
+                    )
                     yield Static(
-                        "Enter: Open repo • Esc: Quit",
+                        "Enter: Open  •  Tab: Autocomplete  •  Esc: Quit",
                         id="hint-text",
                     )
         yield Footer()
