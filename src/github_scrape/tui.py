@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, ClassVar
 
+import httpx
 from rich.text import Text
 from textual import on, work
 from textual.app import App, ComposeResult
@@ -41,120 +42,33 @@ from github_scrape.api import (
 )
 from github_scrape.config import get_download_path, get_token, mask_token
 from github_scrape.downloader import DownloadResult, Downloader
-from github_scrape.utils import parse_github_url
+from github_scrape.utils import format_size, parse_github_url
 
-# ASCII art for the title
 TITLE_ART = """[bold #58a6ff]
 
  ██████╗ ██╗████████╗██╗  ██╗██╗   ██╗██████╗     ███████╗ ██████╗██████╗  █████╗ ██████╗ ███████╗
 ██╔════╝ ██║╚══██╔══╝██║  ██║██║   ██║██╔══██╗    ██╔════╝██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝
-██║  ███╗██║   ██║   ███████║██║   ██║██████╔╝    ███████╗██║     ██████╔╝███████║██████╔╝█████╗  
-██║   ██║██║   ██║   ██╔══██║██║   ██║██╔══██╗    ╚════██║██║     ██╔══██╗██╔══██║██╔═══╝ ██╔══╝  
+██║  ███╗██║   ██║   ███████║██║   ██║██████╔╝    ███████╗██║     ██████╔╝███████║██████╔╝█████╗
+██║   ██║██║   ██║   ██╔══██║██║   ██║██╔══██╗    ╚════██║██║     ██╔══██╗██╔══██║██╔═══╝ ██╔══╝
 ╚██████╔╝██║   ██║   ██║  ██║╚██████╔╝██████╔╝    ███████║╚██████╗██║  ██║██║  ██║██║     ███████╗
  ╚═════╝ ╚═╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚═════╝     ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚══════╝
 [/bold #58a6ff]"""
 
 
-# ─── Data attached to tree nodes ─────────────────────────────
 @dataclass
 class FileNodeData:
-    """Data stored in each tree node."""
-
     repo_file: RepoFile
     selected: bool = False
 
 
-# ─── Home Screen ─────────────────────────────────────────────
 class HomeScreen(Screen[str]):
-    """Landing screen — centered ASCII art + URL input."""
-
     BINDINGS = [
         Binding("escape", "quit_app", "Quit", show=True),
         Binding("q", "quit_app", "Quit", show=False),
         Binding("ctrl+q", "quit_app", "Quit", show=False),
     ]
 
-    CSS = """
-    HomeScreen {
-        align: center middle;
-        background: $surface;
-    }
-
-    #home-wrapper {
-        width: 100%;
-        height: 100%;
-        align: center middle;
-    }
-
-    #home-content {
-        width: auto;
-        height: auto;
-        align: center middle;
-        content-align: center middle;
-    }
-
-    #ascii-art {
-        width: auto;
-        height: auto;
-        text-align: center;
-        content-align: center middle;
-        color: $accent;
-        text-style: bold;
-        margin-bottom: 1;
-    }
-
-    #tagline {
-        width: auto;
-        text-align: center;
-        content-align: center middle;
-        color: $text-muted;
-        margin-bottom: 1;
-    }
-
-    #input-container {
-        width: 80;
-        height: auto;
-        background: $surface-lighten-1;
-        border: round $accent;
-        padding: 1 2;
-        margin-top: 1;
-    }
-
-    #url-prompt {
-        text-align: center;
-        content-align: center middle;
-        color: $text;
-        text-style: bold;
-        margin-bottom: 1;
-    }
-
-    #url-input {
-        width: 100%;
-        border: none;
-        background: $surface;
-        padding: 1;
-    }
-
-    #url-input:focus {
-        border: none;
-    }
-
-    #examples {
-        width: auto;
-        text-align: center;
-        content-align: center middle;
-        color: $text-muted;
-        margin-top: 1;
-    }
-
-    #hint-text {
-        width: auto;
-        text-align: center;
-        content-align: center middle;
-        color: $text-disabled;
-        margin-top: 1;
-    }
-    """
+    CSS_PATH = "styles/home.tcss"
 
     def compose(self) -> ComposeResult:
         with Middle():
@@ -210,10 +124,7 @@ class HomeScreen(Screen[str]):
         self.app.exit()
 
 
-# ─── Browse Screen ───────────────────────────────────────────
 class BrowseScreen(Screen[None]):
-    """Repository file browser with tree, search, selection, download."""
-
     BINDINGS = [
         Binding("q", "quit_app", "Quit", show=True),
         Binding("ctrl+q", "quit_app", "Quit", show=False),
@@ -238,56 +149,7 @@ class BrowseScreen(Screen[None]):
         Binding("left", "go_back", "Back", show=False),
     ]
 
-    CSS = """
-    BrowseScreen {
-        background: $surface;
-    }
-
-    #repo-header {
-        width: 100%;
-        height: 3;
-        dock: top;
-        background: $accent;
-        color: $text;
-        content-align: center middle;
-        text-align: center;
-        text-style: bold;
-        padding: 0 2;
-    }
-
-    #search-container {
-        width: 100%;
-        height: auto;
-        dock: top;
-        display: none;
-        padding: 0 1;
-    }
-
-    #search-container.visible {
-        display: block;
-    }
-
-    #search-input {
-        width: 100%;
-    }
-
-    #file-tree {
-        width: 100%;
-        height: 1fr;
-        padding: 0 1;
-    }
-
-    #status-bar {
-        width: 100%;
-        height: 1;
-        dock: bottom;
-        background: $panel;
-        color: $text-muted;
-        content-align: center middle;
-        text-align: center;
-        padding: 0 2;
-    }
-    """
+    CSS_PATH = "styles/browse.tcss"
 
     def __init__(
         self,
@@ -341,14 +203,12 @@ class BrowseScreen(Screen[None]):
             self.repo_tree = await client.get_tree(self.owner, self.repo, self.branch)
             self.all_files = self.repo_tree.files
 
-            # Update header
             token_icon = "🔑" if token else "🔓"
             header = self.query_one("#repo-header", Static)
             header.update(
                 f" {self.owner}/{self.repo} @ {self.branch} {token_icon}"
             )
 
-            # Build tree
             self._build_tree()
             self._update_status()
 
@@ -364,7 +224,6 @@ class BrowseScreen(Screen[None]):
             await client.close()
 
     def _build_tree(self, filter_query: str = "") -> None:
-        """Build or rebuild the file tree, optionally filtered."""
         tree_widget = self.query_one("#file-tree", Tree)
         tree_widget.clear()
         tree_widget.root.expand()
@@ -372,7 +231,6 @@ class BrowseScreen(Screen[None]):
         if not self.all_files:
             return
 
-        # Filter files if query present
         if filter_query:
             from rapidfuzz import fuzz
 
@@ -384,16 +242,12 @@ class BrowseScreen(Screen[None]):
         else:
             visible = list(self.all_files)
 
-        # Determine current view path
         prefix = "/".join(self.current_path)
-
-        # Build directory structure
         dirs_added: set[str] = set()
 
         for repo_file in sorted(visible, key=lambda f: (f.type != "tree", f.path)):
             path = repo_file.path
 
-            # If we're in a subfolder, only show contents of that folder
             if prefix:
                 if not path.startswith(prefix + "/"):
                     continue
@@ -401,10 +255,8 @@ class BrowseScreen(Screen[None]):
             else:
                 relative = path
 
-            # Only show immediate children
             parts = relative.split("/")
             if len(parts) > 1 and repo_file.type == "blob":
-                # This file is nested — show its parent dir instead
                 dir_name = parts[0]
                 dir_path = f"{prefix}/{dir_name}" if prefix else dir_name
                 if dir_path not in dirs_added:
@@ -433,38 +285,32 @@ class BrowseScreen(Screen[None]):
         tree_widget.root.expand()
         tree_widget.focus()
 
-        # Move cursor to first child node (root has no data)
         if tree_widget.root.children:
             tree_widget.cursor_line = 0
 
     def _format_node_label(self, repo_file: RepoFile, selected: bool) -> Text:
-        """Format a tree node label with selection indicator and icon."""
-        # Selection indicator
         check = "[*]" if selected else "[ ]"
 
-        # Icon
         if repo_file.type == "tree":
             icon = "📁 " if self.emoji_icons else "[D] "
         else:
             icon = "📄 " if self.emoji_icons else "[F] "
 
-        # Name (just the last part of the path)
         name = repo_file.path.split("/")[-1]
         if repo_file.type == "tree":
             name += "/"
 
-        # Size for files
         size_str = ""
         if repo_file.type == "blob" and repo_file.size > 0:
-            size_str = f" ({_format_size(repo_file.size)})"
+            size_str = f" ({format_size(repo_file.size)})"
 
         label_str = f"{check} {icon}{name}{size_str}"
 
         text = Text(label_str)
         if selected:
-            text.stylize("bold green", 0, 3)  # [*] in green
+            text.stylize("bold green", 0, 3)
         else:
-            text.stylize("dim", 0, 3)  # [ ] dimmed
+            text.stylize("dim", 0, 3)
 
         if repo_file.type == "tree":
             text.stylize("bold cyan", 4, 4 + len(icon) + len(name))
@@ -472,10 +318,8 @@ class BrowseScreen(Screen[None]):
         return text
 
     def _update_status(self) -> None:
-        """Update the status bar with selection count."""
         total = len([f for f in self.all_files if f.type == "blob"])
         selected = len(self.selected_files)
-        path_display = "/" + "/".join(self.current_path) if self.current_path else "/"
 
         status = self.query_one("#status-bar", Static)
         status.update(
@@ -483,21 +327,16 @@ class BrowseScreen(Screen[None]):
         )
 
     def _refresh_node_label(self, node: TreeNode[FileNodeData]) -> None:
-        """Update a single node's label to reflect selection state."""
         if node.data is None:
             return
         node.set_label(
             self._format_node_label(node.data.repo_file, node.data.selected)
         )
 
-    # ── Actions ──────────────────────────────────────────
-
     def action_toggle_select(self) -> None:
-        """Toggle selection on the highlighted node."""
         tree = self.query_one("#file-tree", Tree)
         node = tree.cursor_node
         if node is None or node.data is None:
-            # No data on this node - could be root or empty
             return
 
         data: FileNodeData = node.data
@@ -519,7 +358,6 @@ class BrowseScreen(Screen[None]):
         self._update_status()
 
     def _set_children_selection(self, folder_path: str, selected: bool) -> None:
-        """Select/deselect all files under a folder path."""
         for f in self.all_files:
             if f.path.startswith(folder_path + "/") and f.type == "blob":
                 if selected:
@@ -528,7 +366,6 @@ class BrowseScreen(Screen[None]):
                     self.selected_files.discard(f.path)
 
     def _refresh_all_visible_nodes(self) -> None:
-        """Refresh labels of all visible tree nodes."""
         tree = self.query_one("#file-tree", Tree)
         for node in tree.root.children:
             if node.data is not None:
@@ -537,13 +374,11 @@ class BrowseScreen(Screen[None]):
                 self._refresh_node_label(node)
 
     def action_select_all(self) -> None:
-        """Select all visible nodes."""
         tree = self.query_one("#file-tree", Tree)
         for node in tree.root.children:
             if node.data is not None:
                 node.data.selected = True
                 path = node.data.repo_file.path
-                # Only add files to selected_files, not folders
                 if node.data.repo_file.type == "blob":
                     self.selected_files.add(path)
                 elif node.data.repo_file.type == "tree":
@@ -552,7 +387,6 @@ class BrowseScreen(Screen[None]):
         self._update_status()
 
     def action_unselect_all(self) -> None:
-        """Unselect all nodes."""
         self.selected_files.clear()
         tree = self.query_one("#file-tree", Tree)
         for node in tree.root.children:
@@ -562,13 +396,11 @@ class BrowseScreen(Screen[None]):
         self._update_status()
 
     def action_toggle_icons(self) -> None:
-        """Toggle between emoji and ASCII icons."""
         self.emoji_icons = not self.emoji_icons
         self._build_tree()
         self._update_status()
 
     def action_enter_node(self) -> None:
-        """Enter a folder."""
         tree = self.query_one("#file-tree", Tree)
         node = tree.cursor_node
         if node is None or node.data is None:
@@ -581,34 +413,28 @@ class BrowseScreen(Screen[None]):
             self._update_status()
 
     def action_go_back(self) -> None:
-        """Go to parent folder."""
         if self.current_path:
             self.current_path.pop()
             self._build_tree()
             self._update_status()
 
     def action_handle_escape(self) -> None:
-        """Escape context-dependent behavior."""
-        # If search is visible, close it
         search_container = self.query_one("#search-container")
         if "visible" in search_container.classes:
             search_container.remove_class("visible")
             self.query_one("#file-tree", Tree).focus()
-            self._build_tree()  # Reset filter
+            self._build_tree()
             return
 
-        # If in subfolder, go back
         if self.current_path:
             self.current_path.pop()
             self._build_tree()
             self._update_status()
             return
 
-        # At root, go home
         self.app.pop_screen()
 
     def action_focus_search(self) -> None:
-        """Show and focus the search bar."""
         search_container = self.query_one("#search-container")
         search_container.add_class("visible")
         search_input = self.query_one("#search-input", Input)
@@ -617,7 +443,6 @@ class BrowseScreen(Screen[None]):
 
     @on(Input.Changed, "#search-input")
     def on_search_changed(self, event: Input.Changed) -> None:
-        """Filter tree as user types."""
         self._build_tree(filter_query=event.value)
 
     def action_jump_top(self) -> None:
@@ -636,7 +461,6 @@ class BrowseScreen(Screen[None]):
         self.app.exit()
 
     def action_download(self) -> None:
-        """Download selected files."""
         if not self.selected_files:
             self.notify("No files selected. Use Space to select files.", severity="warning")
             return
@@ -644,8 +468,6 @@ class BrowseScreen(Screen[None]):
 
     @work(exclusive=True)
     async def _start_download(self) -> None:
-        """Run the download process."""
-        # Determine destination
         if self.cwd_mode:
             dest = Path.cwd()
         else:
@@ -679,7 +501,6 @@ class BrowseScreen(Screen[None]):
 
             results = await downloader.download_files(selected_repo_files)
 
-            # Summary
             success = sum(1 for r in results if r.success)
             failed = sum(1 for r in results if not r.success)
             lfs = sum(1 for r in results if r.is_lfs)
@@ -704,7 +525,6 @@ class BrowseScreen(Screen[None]):
             await client.close()
 
     def action_preview_file(self) -> None:
-        """Preview the highlighted file."""
         tree = self.query_one("#file-tree", Tree)
         node = tree.cursor_node
         if node is None or node.data is None:
@@ -716,61 +536,39 @@ class BrowseScreen(Screen[None]):
 
     @work(exclusive=True)
     async def _fetch_preview(self, repo_file: RepoFile) -> None:
-        """Fetch and show file preview."""
         token = self.token_override or get_token()
         client = GitHubClient(token=token)
         try:
-            url = await client.get_raw_url(self.owner, self.repo, self.branch, repo_file.path)
-            async with client._client as c:
-                response = await c.get(url)
-                content = response.text
+            url = GitHubClient.get_raw_url(self.owner, self.repo, self.branch, repo_file.path)
+            async with client._client.stream("GET", url) as resp:
+                resp.raise_for_status()
+                chunks = []
+                async for chunk in resp.aiter_text():
+                    chunks.append(chunk)
+                    if sum(len(c) for c in chunks) > 10000:
+                        break
+                content = "".join(chunks)
                 lines = content.splitlines()[:30]
                 preview_text = "\n".join(lines)
                 if len(content.splitlines()) > 30:
                     preview_text += "\n\n... (truncated at 30 lines)"
 
                 self.app.push_screen(PreviewScreen(repo_file.path, preview_text))
-        except Exception as e:
-            self.notify(f"Preview failed: {e}", severity="error")
+        except httpx.HTTPStatusError as e:
+            self.notify(f"HTTP error: {e.response.status_code}", severity="error")
+        except httpx.RequestError as e:
+            self.notify(f"Network error: {e}", severity="error")
         finally:
             await client.close()
 
 
 class PreviewScreen(Screen[None]):
-    """Modal screen showing file preview."""
-
     BINDINGS = [
         Binding("escape", "close", "Close"),
         Binding("q", "close", "Close"),
     ]
 
-    CSS = """
-    PreviewScreen {
-        align: center middle;
-    }
-
-    #preview-container {
-        width: 80%;
-        height: 80%;
-        border: thick $accent;
-        background: $surface;
-        padding: 1 2;
-    }
-
-    #preview-title {
-        width: 100%;
-        text-align: center;
-        text-style: bold;
-        color: $accent;
-        margin-bottom: 1;
-    }
-
-    #preview-content {
-        width: 100%;
-        height: 1fr;
-        overflow-y: auto;
-    }
-    """
+    CSS_PATH = "styles/preview.tcss"
 
     def __init__(self, filename: str, content: str) -> None:
         super().__init__()
@@ -789,23 +587,7 @@ class PreviewScreen(Screen[None]):
         self.app.pop_screen()
 
 
-# ─── Helper ──────────────────────────────────────────────────
-def _format_size(size: int) -> str:
-    """Format bytes to human readable."""
-    if size < 1024:
-        return f"{size} B"
-    elif size < 1024 * 1024:
-        return f"{size / 1024:.1f} KB"
-    elif size < 1024 * 1024 * 1024:
-        return f"{size / (1024 * 1024):.1f} MB"
-    else:
-        return f"{size / (1024 * 1024 * 1024):.1f} GB"
-
-
-# ─── Main App ────────────────────────────────────────────────
 class GitHubScrapeTUI(App[None]):
-    """Main Textual application."""
-
     TITLE = "github-scrape"
 
     CSS = """
@@ -813,7 +595,6 @@ class GitHubScrapeTUI(App[None]):
         background: $surface;
     }
 
-    /* GitHub Dark Theme */
     $accent: #58a6ff;
     $accent-light: #79c0ff;
     $accent-dark: #1f6feb;
@@ -861,7 +642,6 @@ class GitHubScrapeTUI(App[None]):
             self.push_screen(HomeScreen(), callback=self._on_home_dismiss)
 
     def _on_home_dismiss(self, url: str | None) -> None:
-        """Called when HomeScreen returns a URL."""
         if url:
             self.push_screen(
                 BrowseScreen(

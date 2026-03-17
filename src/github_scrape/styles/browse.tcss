@@ -1,0 +1,49 @@
+/* Browse Screen Styles */
+BrowseScreen {
+    background: $surface;
+}
+
+#repo-header {
+    width: 100%;
+    height: 3;
+    dock: top;
+    background: $accent;
+    color: $text;
+    content-align: center middle;
+    text-align: center;
+    text-style: bold;
+    padding: 0 2;
+}
+
+#search-container {
+    width: 100%;
+    height: auto;
+    dock: top;
+    display: none;
+    padding: 0 1;
+}
+
+#search-container.visible {
+    display: block;
+}
+
+#search-input {
+    width: 100%;
+}
+
+#file-tree {
+    width: 100%;
+    height: 1fr;
+    padding: 0 1;
+}
+
+#status-bar {
+    width: 100%;
+    height: 1;
+    dock: bottom;
+    background: $panel;
+    color: $text-muted;
+    content-align: center middle;
+    text-align: center;
+    padding: 0 2;
+}

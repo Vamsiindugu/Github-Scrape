@@ -2,10 +2,17 @@ import asyncio
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+import httpx
 
 from github_scrape.api import GitHubClient, RepoFile
 
-LFS_SIGNATURE = "version https://git-lfs.github.com"
+if TYPE_CHECKING:
+    pass
+
+LFS_SIGNATURE = b"version https://git-lfs.github.com"
+DEFAULT_CHUNK_SIZE = 64 * 1024
 
 
 @dataclass
@@ -43,6 +50,7 @@ class Downloader:
         self._dest = dest
         self._create_repo_folder = create_repo_folder
         self._max_concurrent = max_concurrent
+        self._shutdown_event = asyncio.Event()
 
     async def download_files(
         self,
@@ -52,15 +60,34 @@ class Downloader:
         semaphore = asyncio.Semaphore(self._max_concurrent)
 
         async def download_with_progress(f: RepoFile) -> DownloadResult:
+            if self._shutdown_event.is_set():
+                return DownloadResult(
+                    path=f.path, success=False, size=0, is_lfs=False, error="Download cancelled"
+                )
             async with semaphore:
                 result = await self._download_single(f)
                 if progress_callback:
                     progress_callback(f.path, result.size, result.size)
                 return result
 
-        tasks = [download_with_progress(f) for f in files]
-        results = await asyncio.gather(*tasks)
-        return list(results)
+        tasks = [asyncio.create_task(download_with_progress(f)) for f in files]
+
+        try:
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            return [
+                r if isinstance(r, DownloadResult) else
+                DownloadResult(path=files[i].path, success=False, size=0, is_lfs=False, error=str(r))
+                for i, r in enumerate(results)
+            ]
+        except asyncio.CancelledError:
+            self._shutdown_event.set()
+            for task in tasks:
+                task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
+            return [
+                DownloadResult(path=f.path, success=False, size=0, is_lfs=False, error="Cancelled")
+                for f in files
+            ]
 
     async def _download_single(self, file: RepoFile) -> DownloadResult:
         if file.type != "blob":
@@ -80,14 +107,15 @@ class Downloader:
                     error="Skipped (identical)",
                 )
 
-            raw_url = await self._client.get_raw_url(
+            raw_url = GitHubClient.get_raw_url(
                 self._owner, self._repo, self._branch, file.path
             )
+
             resp = await self._client._client.get(raw_url)
             resp.raise_for_status()
 
             content = resp.content
-            is_lfs = content.startswith(LFS_SIGNATURE.encode())
+            is_lfs = content.startswith(LFS_SIGNATURE)
 
             local_path.write_bytes(content)
 
@@ -96,6 +124,35 @@ class Downloader:
                 success=True,
                 size=len(content),
                 is_lfs=is_lfs,
+            )
+
+        except asyncio.CancelledError:
+            if local_path.exists():
+                local_path.unlink()
+            raise
+        except OSError as e:
+            return DownloadResult(
+                path=file.path,
+                success=False,
+                size=0,
+                is_lfs=False,
+                error=f"IO error: {e}",
+            )
+        except httpx.HTTPStatusError as e:
+            return DownloadResult(
+                path=file.path,
+                success=False,
+                size=0,
+                is_lfs=False,
+                error=f"HTTP {e.response.status_code}",
+            )
+        except httpx.RequestError as e:
+            return DownloadResult(
+                path=file.path,
+                success=False,
+                size=0,
+                is_lfs=False,
+                error=f"Network error: {e}",
             )
         except Exception as e:
             return DownloadResult(

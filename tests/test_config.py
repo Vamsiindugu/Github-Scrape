@@ -9,6 +9,7 @@ from github_scrape import config
 def isolated_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(config, "CONFIG_DIR", tmp_path)
     monkeypatch.setattr(config, "CONFIG_FILE", tmp_path / "config.toml")
+    config.invalidate_cache()
     return tmp_path
 
 

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any
 
 import httpx
 
@@ -54,31 +55,9 @@ class GitHubClient:
         )
         self._token = token
 
-    async def get_default_branch(self, owner: str, repo: str) -> str:
-        url = f"https://api.github.com/repos/{owner}/{repo}"
-        resp = await self._client.get(url)
+    def _validate_response(self, resp: httpx.Response, context: str = "") -> None:
         if resp.status_code == 404:
-            raise NotFoundError(f"Repository '{owner}/{repo}' not found or is private.", 404)
-        if resp.status_code == 401:
-            raise AuthError("Invalid token. Run: github-scrape config set token <TOKEN>", 401)
-        if resp.status_code == 403:
-            remaining = resp.headers.get("X-RateLimit-Remaining", "unknown")
-            if remaining == "0":
-                reset_ts = int(resp.headers.get("X-RateLimit-Reset", "0"))
-                reset_time = datetime.fromtimestamp(reset_ts).strftime("%H:%M:%S")
-                raise RateLimitError(
-                    f"Rate limited. Resets at {reset_time}. Add a token for 5000 req/hr.",
-                    403,
-                )
-        resp.raise_for_status()
-        data = resp.json()
-        return str(data.get("default_branch", "main"))
-
-    async def get_tree(self, owner: str, repo: str, branch: str) -> RepoTree:
-        url = f"https://api.github.com/repos/{owner}/{repo}/git/trees/{branch}?recursive=1"
-        resp = await self._client.get(url)
-        if resp.status_code == 404:
-            raise NotFoundError(f"Repository '{owner}/{repo}' or branch '{branch}' not found.", 404)
+            raise NotFoundError(f"{context} not found or is private.", 404)
         if resp.status_code == 401:
             raise AuthError("Invalid token. Run: github-scrape config set token <TOKEN>", 401)
         if resp.status_code == 403:
@@ -97,6 +76,18 @@ class GitHubClient:
                 429,
             )
         resp.raise_for_status()
+
+    async def get_default_branch(self, owner: str, repo: str) -> str:
+        url = f"https://api.github.com/repos/{owner}/{repo}"
+        resp = await self._client.get(url)
+        self._validate_response(resp, f"Repository '{owner}/{repo}'")
+        data = resp.json()
+        return str(data.get("default_branch", "main"))
+
+    async def get_tree(self, owner: str, repo: str, branch: str) -> RepoTree:
+        url = f"https://api.github.com/repos/{owner}/{repo}/git/trees/{branch}?recursive=1"
+        resp = await self._client.get(url)
+        self._validate_response(resp, f"Repository '{owner}/{repo}' or branch '{branch}'")
         data = resp.json()
         files: list[RepoFile] = []
         for item in data.get("tree", []):
@@ -104,7 +95,7 @@ class GitHubClient:
             item_type = str(item.get("type", "blob"))
             size = int(item.get("size", 0))
             sha = str(item.get("sha", ""))
-            raw_url = f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}"
+            raw_url = self.get_raw_url(owner, repo, branch, path)
             files.append(RepoFile(path=path, type=item_type, size=size, sha=sha, url=raw_url))
         return RepoTree(
             owner=owner,
@@ -114,7 +105,8 @@ class GitHubClient:
             truncated=bool(data.get("truncated", False)),
         )
 
-    async def get_raw_url(self, owner: str, repo: str, branch: str, path: str) -> str:
+    @staticmethod
+    def get_raw_url(owner: str, repo: str, branch: str, path: str) -> str:
         return f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}"
 
     async def get_rate_limit(self) -> dict[str, int]:

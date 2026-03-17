@@ -114,9 +114,8 @@ class TestGitHubClient:
 
     @pytest.mark.asyncio
     async def test_get_raw_url_format(self) -> None:
-        async with GitHubClient() as client:
-            url = await client.get_raw_url("owner", "repo", "main", "src/file.py")
-            assert url == "https://raw.githubusercontent.com/owner/repo/main/src/file.py"
+        url = GitHubClient.get_raw_url("owner", "repo", "main", "src/file.py")
+        assert url == "https://raw.githubusercontent.com/owner/repo/main/src/file.py"
 
     @pytest.mark.asyncio
     async def test_token_injected_in_header(self) -> None:

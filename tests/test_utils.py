@@ -77,9 +77,10 @@ class TestParseGitHubURL:
         with pytest.raises(ValueError, match="Invalid GitHub URL"):
             parse_github_url("just-a-name")
 
-    def test_http_url_raises(self) -> None:
-        with pytest.raises(ValueError, match="Invalid GitHub URL"):
-            parse_github_url("http://github.com/a/b")
+    def test_http_url_accepted(self) -> None:
+        owner, repo, branch, subpath = parse_github_url("http://github.com/owner/repo")
+        assert owner == "owner"
+        assert repo == "repo"
 
 
 class TestSanitizeFilename:

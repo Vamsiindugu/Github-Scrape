@@ -1,12 +1,12 @@
+import asyncio
 import signal
 import sys
+from dataclasses import dataclass
 from typing import Any
 
 import typer
 from rich.console import Console
 from rich.table import Table
-from rich.panel import Panel
-from rich.text import Text
 
 from github_scrape import config
 from github_scrape.tui import BrowseScreen, GitHubScrapeTUI
@@ -18,9 +18,13 @@ app.add_typer(config_app)
 
 console = Console()
 
-_session_token: str | None = None
-_session_cwd: bool = False
-_session_no_folder: bool = False
+
+@dataclass
+class AppState:
+    token: str | None = None
+    cwd: bool = False
+    no_folder: bool = False
+    shutdown_requested: bool = False
 
 
 @config_app.command("set")
@@ -68,37 +72,7 @@ def config_unset(key: str) -> None:
         raise typer.Exit(1)
 
 
-def _signal_handler(signum: int, frame: Any) -> None:
-    console.print("\n[yellow]Interrupted. Cleaning up...[/yellow]")
-    sys.exit(130)
-
-
-@app.callback(invoke_without_command=True)
-def main(
-    ctx: typer.Context,
-    url: str | None = None,
-    token: str | None = typer.Option(None, "--token", "-t", help="GitHub token"),
-    cwd: bool = typer.Option(False, "--cwd", help="Download to current directory"),
-    no_folder: bool = typer.Option(False, "--no-folder", help="Don't create repo subfolder"),
-) -> None:
-    global _session_token, _session_cwd, _session_no_folder
-
-    if ctx.invoked_subcommand is not None:
-        return
-
-    signal.signal(signal.SIGINT, _signal_handler)
-
-    _session_token = token
-    _session_cwd = cwd
-    _session_no_folder = no_folder
-
-    if token:
-        import os
-
-        os.environ["GITHUB_SCRAPE_TOKEN"] = token
-
-    # Print welcome message with branding
-    # Using GitHub Dark Theme blue colors (#58a6ff -> #79c0ff) similar to Gemini CLI gradient
+def _print_welcome() -> None:
     console.print()
     console.print("[bold #58a6ff]  ██████╗ ██╗   ██╗ ██████╗ ██████╗  █████╗ ██████╗[/bold #58a6ff]")
     console.print("[bold #58a6ff] ██╔════╝ ██║   ██║██╔════╝ ██╔══██╗██╔══██╗██╔══██╗[/bold #58a6ff]")
@@ -110,19 +84,64 @@ def main(
     console.print("[bold #79c0ff]  github-scrape[/bold #79c0ff] [dim]—[/dim] Download files from GitHub without cloning")
     console.print()
 
-    if url is None:
-        console.print("[italic]Launching interactive browser... Press Ctrl+C to quit anytime[/italic]\n")
-        tui_app = GitHubScrapeTUI()
-        tui_app.run()
-    else:
-        try:
-            owner, repo, branch, subpath = parse_github_url(url)
-            console.print(f"[green]Opening {owner}/{repo}@{branch or 'default'}...[/green]\n")
-            tui_app = GitHubScrapeTUI()
-            tui_app.push_screen(
-                BrowseScreen(owner=owner, repo=repo, branch=branch, subpath=subpath)
+
+@app.callback(invoke_without_command=True)
+def main(
+    ctx: typer.Context,
+    url: str | None = None,
+    token: str | None = typer.Option(None, "--token", "-t", help="GitHub token"),
+    cwd: bool = typer.Option(False, "--cwd", help="Download to current directory"),
+    no_folder: bool = typer.Option(False, "--no-folder", help="Don't create repo subfolder"),
+) -> None:
+    if ctx.invoked_subcommand is not None:
+        return
+
+    state = AppState(token=token, cwd=cwd, no_folder=no_folder)
+    ctx.obj = state
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    shutdown_event = asyncio.Event()
+
+    def signal_handler(signum: int, frame: Any) -> None:
+        state.shutdown_requested = True
+        shutdown_event.set()
+        console.print("\n[yellow]Shutdown requested. Cleaning up...[/yellow]")
+
+    signal.signal(signal.SIGINT, signal_handler)
+
+    try:
+        _print_welcome()
+
+        if url is None:
+            console.print("[italic]Launching interactive browser... Press Ctrl+C to quit anytime[/italic]\n")
+            tui_app = GitHubScrapeTUI(
+                token=state.token,
+                cwd=state.cwd,
+                no_folder=state.no_folder,
             )
-            tui_app.run()
-        except ValueError as e:
-            console.print(f"[red]Error: {e}[/red]")
-            raise typer.Exit(1) from None
+        else:
+            try:
+                owner, repo, branch, subpath = parse_github_url(url)
+                console.print(f"[green]Opening {owner}/{repo}@{branch or 'default'}...[/green]\n")
+                tui_app = GitHubScrapeTUI(
+                    url=url,
+                    token=state.token,
+                    cwd=state.cwd,
+                    no_folder=state.no_folder,
+                )
+            except ValueError as e:
+                console.print(f"[red]Error: {e}[/red]")
+                raise typer.Exit(1) from None
+
+        loop.run_until_complete(tui_app.run_async())
+
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Interrupted by user.[/yellow]")
+    finally:
+        if not shutdown_event.is_set():
+            pass
+        loop.run_until_complete(loop.shutdown_asyncgens())
+        loop.close()
+        console.print("[dim]Goodbye![/dim]")

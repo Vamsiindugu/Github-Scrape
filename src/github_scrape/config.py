@@ -7,21 +7,35 @@ import tomlkit
 CONFIG_DIR: Path = Path(platformdirs.user_config_dir("github-scrape"))
 CONFIG_FILE: Path = CONFIG_DIR / "config.toml"
 
+_config_cache: dict[str, Any] | None = None
+
 
 def load_config() -> dict[str, Any]:
+    global _config_cache
+    if _config_cache is not None:
+        return _config_cache
     try:
         content = CONFIG_FILE.read_text()
-        return dict(tomlkit.parse(content))
+        _config_cache = dict(tomlkit.parse(content))
+        return _config_cache
     except (OSError, tomlkit.exceptions.ParseError):
-        return {}
+        _config_cache = {}
+        return _config_cache
 
 
 def save_config(cfg: dict[str, Any]) -> None:
+    global _config_cache
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     doc = tomlkit.document()
     for section, values in cfg.items():
         doc[section] = values
     CONFIG_FILE.write_text(tomlkit.dumps(doc))
+    _config_cache = cfg
+
+
+def invalidate_cache() -> None:
+    global _config_cache
+    _config_cache = None
 
 
 def get_token() -> str | None:
