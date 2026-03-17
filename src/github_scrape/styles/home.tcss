@@ -42,6 +42,7 @@ HomeScreen {
     border: round $accent;
     padding: 1 2;
     margin-top: 1;
+    align: center middle;
 }
 
 #url-prompt {

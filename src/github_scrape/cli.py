@@ -71,31 +71,17 @@ def config_unset(key: str) -> None:
         raise typer.Exit(1)
 
 
-def _print_welcome() -> None:  # type: ignore
+def _print_welcome() -> None:
     """Print welcome message with ASCII art."""
     console.print()
-    console.print(
-        "[bold #58a6ff] ██████╗ ██╗████████╗██╗ ██╗██╗ ██╗██████╗ ███████╗ ██████╗██████╗ █████╗ ██████╗ ███████╗[/bold #58a6ff]"  # noqa: E501
-    )
-    console.print(
-        "[bold #58a6ff]██╔════╝ ██║╚══██╔══╝██║ ██║██║ ██║██╔══██╗ ██╔════╝██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝[/bold #58a6ff]"  # noqa: E501
-    )
-    console.print(
-        "[bold #58a6ff]██║ ███╗██║ ██║ ███████║██║ ██║██████╔╝ ███████╗██║ ██████╔╝███████║██████╔╝█████╗[/bold #58a6ff]"  # noqa: E501
-    )
-    console.print(
-        "[bold #58a6ff]██║ ██║██║ ██║ ██╔══██║██║ ██║██╔══██╗ ╚════██║██║ ██╔══██╗██╔══██║██╔═══╝ ██╔══╝[/bold #58a6ff]"  # noqa: E501
-    )
-    console.print(
-        "[bold #58a6ff]╚██████╔╝██║ ██║ ██║ ██║╚██████╔╝██████╔╝ ███████║╚██████╗██║ ██║██║ ██║██║ ███████╗[/bold #58a6ff]"  # noqa: E501
-    )
-    console.print(
-        "[bold #58a6ff] ╚═════╝ ╚═╝ ╚═╝ ╚═╝ ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝ ╚═════╝╚═╝ ╚═╝╚═╝ ╚═╝╚═╝ ╚══════╝[/bold #58a6ff]"  # noqa: E501
-    )
+    console.print("[bold #58a6ff] ██████╗ ██╗████████╗██╗ ██╗██╗ ██╗██████╗ ███████╗ ██████╗██████╗ █████╗ ██████╗ ███████╗[/bold #58a6ff]")  # noqa: E501
+    console.print("[bold #58a6ff]██╔════╝ ██║╚══██╔══╝██║ ██║██║ ██║██╔══██╗ ██╔════╝██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝[/bold #58a6ff]")  # noqa: E501
+    console.print("[bold #58a6ff]██║ ███╗██║ ██║ ███████║██║ ██║██████╔╝ ███████╗██║ ██████╔╝███████║██████╔╝█████╗[/bold #58a6ff]")  # noqa: E501
+    console.print("[bold #58a6ff]██║ ██║██║ ██║ ██╔══██║██║ ██║██╔══██╗ ╚════██║██║ ██╔══██╗██╔══██║██╔═══╝ ██╔══╝[/bold #58a6ff]")  # noqa: E501
+    console.print("[bold #58a6ff]╚██████╔╝██║ ██║ ██║ ██║╚██████╔╝██████╔╝ ███████║╚██████╗██║ ██║██║ ██║██║ ███████╗[/bold #58a6ff]")  # noqa: E501
+    console.print("[bold #58a6ff] ╚═════╝ ╚═╝ ╚═╝ ╚═╝ ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝ ╚═════╝╚═╝ ╚═╝╚═╝ ╚═╝╚═╝ ╚══════╝[/bold #58a6ff]")  # noqa: E501
     console.print()
-    console.print(
-        "[bold #79c0ff]               github-scrape[/bold #79c0ff] [dim]—[/dim] Download files from GitHub without cloning"
-    )
+    console.print("[bold #79c0ff]           github-scrape[/bold #79c0ff] [dim]—[/dim] Download files from GitHub without cloning")
     console.print()
 
 
@@ -129,9 +115,7 @@ def main(
         _print_welcome()
 
         if url is None:
-            console.print(
-                "[italic]Launching interactive browser... Press Ctrl+C to quit anytime[/italic]\n"
-            )
+            console.print("[italic]Launching interactive browser... Press Ctrl+C to quit anytime[/italic]\n")
             tui_app = GitHubScrapeTUI(
                 token=state.token,
                 cwd=state.cwd,
