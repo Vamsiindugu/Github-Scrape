@@ -336,6 +336,18 @@ class BrowseScreen(Screen[None]):
     def action_toggle_select(self) -> None:
         tree = self.query_one("#file-tree", Tree)
         node = tree.cursor_node
+
+        # Fallback: try cursor_line if cursor_node is None
+        if node is None:
+            try:
+                idx = getattr(tree, "cursor_line", None)
+                if idx is not None and hasattr(tree.root, "children"):
+                    children = list(tree.root.children)
+                    if 0 <= idx < len(children):
+                        node = children[idx]
+            except Exception:
+                node = None
+
         if node is None or node.data is None:
             return
 
