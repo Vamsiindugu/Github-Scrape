@@ -71,7 +71,7 @@ def config_unset(key: str) -> None:
         raise typer.Exit(1)
 
 
-def _print_welcome() -> None:
+def _print_welcome() -> None:  # type: ignore
     """Print welcome message with ASCII art."""
     console.print()
     console.print(
