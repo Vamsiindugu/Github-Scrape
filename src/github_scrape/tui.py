@@ -540,24 +540,27 @@ class BrowseScreen(Screen[None]):
         client = GitHubClient(token=token)
         try:
             url = GitHubClient.get_raw_url(self.owner, self.repo, self.branch, repo_file.path)
-            async with client._client.stream("GET", url) as resp:
-                resp.raise_for_status()
-                chunks = []
-                async for chunk in resp.aiter_text():
-                    chunks.append(chunk)
-                    if sum(len(c) for c in chunks) > 10000:
+            chunks = []
+            total_size = 0
+            async for chunk in client.stream_raw(url):
+                try:
+                    text = chunk.decode("utf-8", errors="replace")
+                    chunks.append(text)
+                    total_size += len(chunk)
+                    if total_size > 10000:
                         break
-                content = "".join(chunks)
-                lines = content.splitlines()[:30]
-                preview_text = "\n".join(lines)
-                if len(content.splitlines()) > 30:
-                    preview_text += "\n\n... (truncated at 30 lines)"
+                except UnicodeDecodeError:
+                    self.notify("Cannot preview binary file", severity="warning")
+                    return
+            content = "".join(chunks)
+            lines = content.splitlines()[:30]
+            preview_text = "\n".join(lines)
+            if len(content.splitlines()) > 30:
+                preview_text += "\n\n... (truncated at 30 lines)"
 
-                self.app.push_screen(PreviewScreen(repo_file.path, preview_text))
-        except httpx.HTTPStatusError as e:
-            self.notify(f"HTTP error: {e.response.status_code}", severity="error")
-        except httpx.RequestError as e:
-            self.notify(f"Network error: {e}", severity="error")
+            self.app.push_screen(PreviewScreen(repo_file.path, preview_text))
+        except GitHubAPIError as e:
+            self.notify(f"API error: {e}", severity="error")
         finally:
             await client.close()
 

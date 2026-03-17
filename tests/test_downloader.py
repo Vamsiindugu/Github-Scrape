@@ -5,7 +5,7 @@ import pytest
 import respx
 
 from github_scrape.api import GitHubClient, RepoFile
-from github_scrape.downloader import LFS_SIGNATURE, Downloader
+from github_scrape.downloader import LFS_SIGNATURES, Downloader
 
 
 @pytest.fixture
@@ -55,7 +55,7 @@ class TestDownloader:
     async def test_download_lfs_pointer_detected(
         self, client: GitHubClient, tmp_dest: Path
     ) -> None:
-        lfs_content = f"{LFS_SIGNATURE}\noid sha256:abc123\nsize 12345".encode()
+        lfs_content = LFS_SIGNATURES[0] + b"\noid sha256:abc123\nsize 12345"
         with respx.mock:
             respx.get("https://raw.githubusercontent.com/owner/repo/main/large.bin").mock(
                 return_value=httpx.Response(200, content=lfs_content)

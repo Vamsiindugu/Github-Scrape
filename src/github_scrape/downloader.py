@@ -1,17 +1,22 @@
+from __future__ import annotations
+
 import asyncio
+import os
+import tempfile
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import httpx
-
-from github_scrape.api import GitHubClient, RepoFile
+from github_scrape.api import GitHubAPIError, GitHubClient, RepoFile
 
 if TYPE_CHECKING:
     pass
 
-LFS_SIGNATURE = b"version https://git-lfs.github.com"
+LFS_SIGNATURES = [
+    b"version https://git-lfs.github.com",
+    b"version https://git-lfs.github.com/",
+]
 DEFAULT_CHUNK_SIZE = 64 * 1024
 
 
@@ -30,6 +35,14 @@ class DownloadPlan:
     dest_dir: Path
     create_repo_folder: bool
     total_size: int
+
+
+def is_lfs_pointer(content: bytes) -> bool:
+    """Check if content is a Git LFS pointer file."""
+    for sig in LFS_SIGNATURES:
+        if content.startswith(sig):
+            return True
+    return False
 
 
 class Downloader:
@@ -94,6 +107,7 @@ class Downloader:
             return DownloadResult(path=file.path, success=True, size=0, is_lfs=False)
 
         local_path = self.resolve_dest_path(file.path)
+        temp_path: Path | None = None
 
         try:
             local_path.parent.mkdir(parents=True, exist_ok=True)
@@ -111,13 +125,23 @@ class Downloader:
                 self._owner, self._repo, self._branch, file.path
             )
 
-            resp = await self._client._client.get(raw_url)
-            resp.raise_for_status()
+            content = await self._client.fetch_raw(raw_url)
+            is_lfs = is_lfs_pointer(content)
 
-            content = resp.content
-            is_lfs = content.startswith(LFS_SIGNATURE)
-
-            local_path.write_bytes(content)
+            fd, temp_path_str = tempfile.mkstemp(
+                dir=local_path.parent,
+                prefix=f".{local_path.name}.",
+                suffix=".tmp"
+            )
+            temp_path = Path(temp_path_str)
+            try:
+                with os.fdopen(fd, "wb") as f:
+                    f.write(content)
+                os.replace(temp_path, local_path)
+                temp_path = None
+            finally:
+                if temp_path and temp_path.exists():
+                    temp_path.unlink()
 
             return DownloadResult(
                 path=file.path,
@@ -127,8 +151,8 @@ class Downloader:
             )
 
         except asyncio.CancelledError:
-            if local_path.exists():
-                local_path.unlink()
+            if temp_path and temp_path.exists():
+                temp_path.unlink()
             raise
         except OSError as e:
             return DownloadResult(
@@ -138,21 +162,13 @@ class Downloader:
                 is_lfs=False,
                 error=f"IO error: {e}",
             )
-        except httpx.HTTPStatusError as e:
+        except GitHubAPIError as e:
             return DownloadResult(
                 path=file.path,
                 success=False,
                 size=0,
                 is_lfs=False,
-                error=f"HTTP {e.response.status_code}",
-            )
-        except httpx.RequestError as e:
-            return DownloadResult(
-                path=file.path,
-                success=False,
-                size=0,
-                is_lfs=False,
-                error=f"Network error: {e}",
+                error=f"API error: {e}",
             )
         except Exception as e:
             return DownloadResult(

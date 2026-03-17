@@ -1,8 +1,17 @@
+from __future__ import annotations
+
+import asyncio
+import logging
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
+from typing import Any, AsyncIterator
 
 import httpx
+
+logger = logging.getLogger(__name__)
+
+MAX_RETRIES = 3
+RETRY_BACKOFF_BASE = 1.0
 
 
 @dataclass
@@ -77,17 +86,41 @@ class GitHubClient:
             )
         resp.raise_for_status()
 
+    async def _request_with_retry(self, method: str, url: str, **kwargs: Any) -> httpx.Response:
+        last_error: Exception | None = None
+        for attempt in range(MAX_RETRIES):
+            try:
+                resp = await self._client.request(method, url, **kwargs)
+                self._validate_response(resp, url)
+                return resp
+            except (httpx.ConnectError, httpx.ReadError, httpx.WriteError) as e:
+                last_error = e
+                wait_time = RETRY_BACKOFF_BASE * (2**attempt)
+                logger.warning(f"Network error on {url}, retrying in {wait_time}s: {e}")
+                await asyncio.sleep(wait_time)
+            except RateLimitError:
+                raise
+            except GitHubAPIError:
+                raise
+            except httpx.HTTPStatusError as e:
+                if 500 <= e.response.status_code < 600:
+                    last_error = e
+                    wait_time = RETRY_BACKOFF_BASE * (2**attempt)
+                    logger.warning(f"Server error {e.response.status_code}, retrying in {wait_time}s")
+                    await asyncio.sleep(wait_time)
+                else:
+                    raise
+        raise last_error or GitHubAPIError(f"Failed to fetch {url} after {MAX_RETRIES} retries")
+
     async def get_default_branch(self, owner: str, repo: str) -> str:
         url = f"https://api.github.com/repos/{owner}/{repo}"
-        resp = await self._client.get(url)
-        self._validate_response(resp, f"Repository '{owner}/{repo}'")
+        resp = await self._request_with_retry("GET", url)
         data = resp.json()
         return str(data.get("default_branch", "main"))
 
     async def get_tree(self, owner: str, repo: str, branch: str) -> RepoTree:
         url = f"https://api.github.com/repos/{owner}/{repo}/git/trees/{branch}?recursive=1"
-        resp = await self._client.get(url)
-        self._validate_response(resp, f"Repository '{owner}/{repo}' or branch '{branch}'")
+        resp = await self._request_with_retry("GET", url)
         data = resp.json()
         files: list[RepoFile] = []
         for item in data.get("tree", []):
@@ -109,10 +142,35 @@ class GitHubClient:
     def get_raw_url(owner: str, repo: str, branch: str, path: str) -> str:
         return f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}"
 
+    async def fetch_raw(self, url: str) -> bytes:
+        """Fetch raw content from a URL with retry logic."""
+        resp = await self._request_with_retry("GET", url)
+        return resp.content
+
+    async def stream_raw(self, url: str) -> AsyncIterator[bytes]:
+        """Stream raw content from a URL with retry logic."""
+        last_error: Exception | None = None
+        for attempt in range(MAX_RETRIES):
+            try:
+                async with self._client.stream("GET", url) as resp:
+                    self._validate_response(resp, url)
+                    async for chunk in resp.aiter_bytes():
+                        yield chunk
+                return
+            except (httpx.ConnectError, httpx.ReadError, httpx.WriteError) as e:
+                last_error = e
+                wait_time = RETRY_BACKOFF_BASE * (2**attempt)
+                logger.warning(f"Stream error on {url}, retrying in {wait_time}s: {e}")
+                await asyncio.sleep(wait_time)
+            except RateLimitError:
+                raise
+            except GitHubAPIError:
+                raise
+        raise last_error or GitHubAPIError(f"Failed to stream {url} after {MAX_RETRIES} retries")
+
     async def get_rate_limit(self) -> dict[str, int]:
         url = "https://api.github.com/rate_limit"
-        resp = await self._client.get(url)
-        resp.raise_for_status()
+        resp = await self._request_with_retry("GET", url)
         data = resp.json()
         resources = data.get("resources", {})
         core = resources.get("core", {})
