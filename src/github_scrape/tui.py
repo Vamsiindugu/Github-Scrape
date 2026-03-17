@@ -45,12 +45,13 @@ from github_scrape.utils import parse_github_url
 
 # ASCII art for the title
 TITLE_ART = """[bold #58a6ff]
- ██████╗ ██╗████████╗██╗ ██╗██╗ ██╗██████╗ ███████╗ ██████╗██████╗ █████╗ ██████╗ ███████╗
-██╔════╝ ██║╚══██╔══╝██║ ██║██║ ██║██╔══██╗ ██╔════╝██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝
-██║ ███╗██║ ██║ ███████║██║ ██║██████╔╝ ███████╗██║ ██████╔╝███████║██████╔╝█████╗
-██║ ██║██║ ██║ ██╔══██║██║ ██║██╔══██╗ ╚════██║██║ ██╔══██╗██╔══██║██╔═══╝ ██╔══╝
-╚██████╔╝██║ ██║ ██║ ██║╚██████╔╝██████╔╝ ███████║╚██████╗██║ ██║██║ ██║██║ ███████╗
- ╚═════╝ ╚═╝ ╚═╝ ╚═╝ ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝ ╚═════╝╚═╝ ╚═╝╚═╝ ╚═╝╚═╝ ╚══════╝
+
+ ██████╗ ██╗████████╗██╗  ██╗██╗   ██╗██████╗     ███████╗ ██████╗██████╗  █████╗ ██████╗ ███████╗
+██╔════╝ ██║╚══██╔══╝██║  ██║██║   ██║██╔══██╗    ██╔════╝██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝
+██║  ███╗██║   ██║   ███████║██║   ██║██████╔╝    ███████╗██║     ██████╔╝███████║██████╔╝█████╗  
+██║   ██║██║   ██║   ██╔══██║██║   ██║██╔══██╗    ╚════██║██║     ██╔══██╗██╔══██║██╔═══╝ ██╔══╝  
+╚██████╔╝██║   ██║   ██║  ██║╚██████╔╝██████╔╝    ███████║╚██████╗██║  ██║██║  ██║██║     ███████╗
+ ╚═════╝ ╚═╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚═════╝     ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚══════╝
 [/bold #58a6ff]"""
 
 
@@ -82,7 +83,7 @@ class HomeScreen(Screen[str]):
     #home-container {
         width: auto;
         height: auto;
-        max-width: 90;
+        max-width: 100%;
         align: center middle;
         content-align: center middle;
         padding: 1 2;
@@ -106,15 +107,32 @@ class HomeScreen(Screen[str]):
         margin-bottom: 2;
     }
 
-    #url-input-container {
-        width: 100%;
-        max-width: 70;
-        align: center middle;
+    #input-box {
+        width: 76;
         height: auto;
+        border: solid $accent;
+        background: $surface-lighten-1;
+        padding: 1 2;
+        margin-top: 1;
+    }
+
+    #input-label {
+        text-align: center;
+        content-align: center middle;
+        text-style: bold;
+        color: $text;
+        margin-bottom: 1;
     }
 
     #url-input {
         width: 100%;
+    }
+
+    #input-hint {
+        text-align: center;
+        content-align: center middle;
+        color: $text-disabled;
+        margin-top: 1;
     }
 
     #hint-text {
@@ -124,6 +142,7 @@ class HomeScreen(Screen[str]):
         color: $text-disabled;
         margin-top: 1;
     }
+
     """
 
     def compose(self) -> ComposeResult:
@@ -135,13 +154,18 @@ class HomeScreen(Screen[str]):
                         "Browse, search & download files from GitHub repos",
                         id="tagline",
                     )
-                    with Center(id="url-input-container"):
+                    with Container(id="input-box"):
+                        yield Static("Enter GitHub URL", id="input-label")
                         yield Input(
-                            placeholder="Paste GitHub URL (Tab → autocomplete https://github.com/)",
+                            placeholder="owner/repo or full URL",
                             id="url-input",
                         )
+                        yield Static(
+                            "Tab: Autocomplete https://github.com/",
+                            id="input-hint",
+                        )
                     yield Static(
-                        "Enter: Open repo • Tab: Autocomplete • Esc: Quit",
+                        "Enter: Open repo • Esc: Quit",
                         id="hint-text",
                     )
         yield Footer()
