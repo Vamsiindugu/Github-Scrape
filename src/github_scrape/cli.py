@@ -73,12 +73,12 @@ def config_unset(key: str) -> None:
 
 def _print_welcome() -> None:
     console.print()
-    console.print("[bold #58a6ff]  ██████╗ ██╗   ██╗ ██████╗ ██████╗  █████╗ ██████╗[/bold #58a6ff]")
-    console.print("[bold #58a6ff] ██╔════╝ ██║   ██║██╔════╝ ██╔══██╗██╔══██╗██╔══██╗[/bold #58a6ff]")
-    console.print("[bold #58a6ff] ██║  ███╗██║   ██║██║  ███╗██████╔╝███████║██████╔╝[/bold #58a6ff]")
-    console.print("[bold #58a6ff] ██║   ██║██║   ██║██║   ██║██╔══██╗██╔══██║██╔══██╗[/bold #58a6ff]")
-    console.print("[bold #58a6ff] ╚██████╔╝╚██████╔╝╚██████╔╝██║  ██║██║  ██║██████╔╝[/bold #58a6ff]")
-    console.print("[bold #58a6ff]  ╚═════╝  ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ [/bold #58a6ff]")
+    console.print("[bold #58a6ff]   ██████╗ ██╗   ██╗████████╗██╗  ██╗██╗   ██╗██████╗ [/bold #58a6ff]")
+    console.print("[bold #58a6ff]  ██╔════╝ ██║   ██║╚══██╔══╝██║  ██║██║   ██║██╔══██╗[/bold #58a6ff]")
+    console.print("[bold #58a6ff]  ██║ ███╗██║   ██║   ██║   ███████║██║   ██║██████╔╝[/bold #58a6ff]")
+    console.print("[bold #58a6ff]  ██║   ██║██║   ██║   ██║   ██╔══██║██║   ██║██╔══██╗[/bold #58a6ff]")
+    console.print("[bold #58a6ff]  ╚██████╔╝╚██████╔╝   ██║   ██║  ██║╚██████╔╝██████╔╝[/bold #58a6ff]")
+    console.print("[bold #58a6ff]   ╚═════╝  ╚═════╝    ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚═════╝ [/bold #58a6ff]")
     console.print()
     console.print("[bold #79c0ff]  github-scrape[/bold #79c0ff] [dim]—[/dim] Download files from GitHub without cloning")
     console.print()
