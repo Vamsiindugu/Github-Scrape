@@ -475,7 +475,7 @@ class BrowseScreen(Screen[None]):
 
         status = self.query_one("#status-bar", Static)
         status.update(
-            f" {selected} selected │ {total} files │ {path_display} │ ↑↓ navigate Space: select"
+            f" {selected} selected │ {total} total │ Space: toggle │ a: all │ u: none │ d: download"
         )
 
     def _refresh_node_label(self, node: TreeNode[FileNodeData]) -> None:
@@ -499,25 +499,19 @@ class BrowseScreen(Screen[None]):
         path = data.repo_file.path
 
         if data.selected:
-            # Deselect
             data.selected = False
             self.selected_files.discard(path)
-            # If it's a folder, deselect all children
             if data.repo_file.type == "tree":
                 self._set_children_selection(path, False)
         else:
-            # Select
             data.selected = True
             self.selected_files.add(path)
-            # If it's a folder, select all children
             if data.repo_file.type == "tree":
                 self._set_children_selection(path, True)
 
         self._refresh_node_label(node)
-        self._update_status()
-
-        # Also refresh any child nodes visible in tree
         self._refresh_all_visible_nodes()
+        self._update_status()
 
     def _set_children_selection(self, folder_path: str, selected: bool) -> None:
         """Select/deselect all files under a folder path."""
