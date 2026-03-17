@@ -80,7 +80,13 @@ class HomeScreen(Screen[str]):
         background: $surface;
     }
 
-    #home-container {
+    #home-wrapper {
+        width: 100%;
+        height: 100%;
+        align: center middle;
+    }
+
+    #home-content {
         width: auto;
         height: auto;
         align: center middle;
@@ -102,12 +108,34 @@ class HomeScreen(Screen[str]):
         text-align: center;
         content-align: center middle;
         color: $text-muted;
-        margin-bottom: 2;
+        margin-bottom: 1;
+    }
+
+    #input-section {
+        width: auto;
+        height: auto;
+        align: center middle;
+        margin-top: 1;
+    }
+
+    #url-prompt {
+        text-align: center;
+        content-align: center middle;
+        color: $text;
+        text-style: bold;
+        margin-bottom: 1;
     }
 
     #url-input {
         width: 76;
-        margin: 1 0;
+    }
+
+    #examples {
+        width: auto;
+        text-align: center;
+        content-align: center middle;
+        color: $text-muted;
+        margin-top: 1;
     }
 
     #hint-text {
@@ -122,18 +150,24 @@ class HomeScreen(Screen[str]):
     def compose(self) -> ComposeResult:
         with Middle():
             with Center():
-                with Vertical(id="home-container"):
+                with Vertical(id="home-content"):
                     yield Static(TITLE_ART, id="ascii-art")
                     yield Static(
                         "Browse, search & download files from GitHub repos",
                         id="tagline",
                     )
-                    yield Input(
-                        placeholder="owner/repo or https://github.com/user/repo",
-                        id="url-input",
-                    )
+                    with Vertical(id="input-section"):
+                        yield Static("GitHub Repository URL", id="url-prompt")
+                        yield Input(
+                            placeholder="owner/repo or https://github.com/user/repo",
+                            id="url-input",
+                        )
+                        yield Static(
+                            "Examples: facebook/react  •  https://github.com/python/cpython",
+                            id="examples",
+                        )
                     yield Static(
-                        "Enter: Open  •  Tab: Autocomplete  •  Esc: Quit",
+                        "Enter: Browse  •  Tab: Autocomplete  •  Esc: Quit",
                         id="hint-text",
                     )
         yield Footer()
@@ -200,6 +234,18 @@ class BrowseScreen(Screen[None]):
         background: $surface;
     }
 
+    #browse-wrapper {
+        width: 100%;
+        height: 100%;
+        align: center middle;
+    }
+
+    #browse-content {
+        width: 90;
+        height: 100%;
+        align: center middle;
+    }
+
     #repo-header {
         width: 100%;
         height: 3;
@@ -230,6 +276,7 @@ class BrowseScreen(Screen[None]):
         width: 100%;
         height: 1fr;
         padding: 0 1;
+        border: solid $surface-lighten-3;
     }
 
     #status-bar {
@@ -240,12 +287,6 @@ class BrowseScreen(Screen[None]):
         content-align: center middle;
         text-align: center;
         padding: 0 2;
-    }
-
-    #loading-container {
-        width: 100%;
-        height: 100%;
-        align: center middle;
     }
     """
 
@@ -275,7 +316,10 @@ class BrowseScreen(Screen[None]):
         yield Static("Loading...", id="repo-header")
         with Container(id="search-container"):
             yield Input(placeholder="Fuzzy search files...", id="search-input")
-        yield Tree("Repository", id="file-tree")
+        with Middle():
+            with Center():
+                with Vertical(id="browse-content"):
+                    yield Tree("Repository", id="file-tree")
         yield Static("Loading repository...", id="status-bar")
         yield Footer()
 
