@@ -1,11 +1,11 @@
-<div align="center">
+
+
+# Github Scrape
 
 [![PyPI version](https://img.shields.io/pypi/v/github-scrape.svg)](https://pypi.org/project/github-scrape/)
 [![Python version](https://img.shields.io/pypi/pyversions/github-scrape.svg)](https://pypi.org/project/github-scrape/)
 [![Tests](https://img.shields.io/badge/tests-passing-green.svg)](https://github.com/Vamsiindugu/Github-Scrape/actions)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-
-# github-scrape
 
 **⚡ Browse, search & download files from GitHub repos without cloning**
 
@@ -13,7 +13,6 @@
 
 ![demo](Demo.png)
 
-</div>
 
 ---
 
