@@ -433,6 +433,10 @@ class BrowseScreen(Screen[None]):
         tree_widget.root.expand()
         tree_widget.focus()
 
+        # Move cursor to first child node (root has no data)
+        if tree_widget.root.children:
+            tree_widget.cursor_line = 0
+
     def _format_node_label(self, repo_file: RepoFile, selected: bool) -> Text:
         """Format a tree node label with selection indicator and icon."""
         # Selection indicator
@@ -493,6 +497,7 @@ class BrowseScreen(Screen[None]):
         tree = self.query_one("#file-tree", Tree)
         node = tree.cursor_node
         if node is None or node.data is None:
+            # No data on this node - could be root or empty
             return
 
         data: FileNodeData = node.data
@@ -538,8 +543,10 @@ class BrowseScreen(Screen[None]):
             if node.data is not None:
                 node.data.selected = True
                 path = node.data.repo_file.path
-                self.selected_files.add(path)
-                if node.data.repo_file.type == "tree":
+                # Only add files to selected_files, not folders
+                if node.data.repo_file.type == "blob":
+                    self.selected_files.add(path)
+                elif node.data.repo_file.type == "tree":
                     self._set_children_selection(path, True)
         self._refresh_all_visible_nodes()
         self._update_status()
