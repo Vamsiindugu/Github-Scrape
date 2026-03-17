@@ -111,10 +111,12 @@ class HomeScreen(Screen[str]):
         margin-bottom: 1;
     }
 
-    #input-section {
-        width: auto;
+    #input-container {
+        width: 80;
         height: auto;
-        align: center middle;
+        background: $surface-lighten-1;
+        border: round $accent;
+        padding: 1 2;
         margin-top: 1;
     }
 
@@ -127,7 +129,14 @@ class HomeScreen(Screen[str]):
     }
 
     #url-input {
-        width: 76;
+        width: 100%;
+        border: none;
+        background: $surface;
+        padding: 1;
+    }
+
+    #url-input:focus {
+        border: none;
     }
 
     #examples {
@@ -156,14 +165,14 @@ class HomeScreen(Screen[str]):
                         "Browse, search & download files from GitHub repos",
                         id="tagline",
                     )
-                    with Vertical(id="input-section"):
+                    with Container(id="input-container"):
                         yield Static("GitHub Repository URL", id="url-prompt")
                         yield Input(
                             placeholder="owner/repo or https://github.com/user/repo",
                             id="url-input",
                         )
                         yield Static(
-                            "Examples: facebook/react  •  https://github.com/python/cpython",
+                            "facebook/react  •  python/cpython",
                             id="examples",
                         )
                     yield Static(
