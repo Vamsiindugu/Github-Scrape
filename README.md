@@ -237,7 +237,9 @@ default_path = "/home/user/Downloads/github-scrape"
 ### Getting a GitHub Token
 
 1️⃣ Go to **Settings → Developer settings → Personal access tokens**
+
 2️⃣ Generate a new token with `repo` scope
+
 3️⃣ Save it: `github-scrape config set token YOUR_TOKEN`
 
 * * *
@@ -247,9 +249,13 @@ default_path = "/home/user/Downloads/github-scrape"
 Contributions are welcome! Please follow these steps:
 
 1️⃣ **Fork** the repository
+
 2️⃣ **Clone** your fork: `git clone https://github.com/YOUR_USERNAME/Github-Scrape.git`
+
 3️⃣ **Create** a feature branch: `git checkout -b feature/amazing-feature`
+
 4️⃣ **Make** your changes
+
 5️⃣ **Run** quality checks:
 ```bash
 # Linting
@@ -261,8 +267,11 @@ mypy src/github_scrape
 # Tests
 pytest tests/ -v
 ```
+
 6️⃣ **Commit** with clear messages: `git commit -m "feat: add amazing feature"`
+
 7️⃣ **Push** to your fork: `git push origin feature/amazing-feature`
+
 8️⃣ **Open** a Pull Request
 
 ### Development Guidelines
