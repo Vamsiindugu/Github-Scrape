@@ -1,303 +1,162 @@
+<div align="center">
 
+# github-scrape
 
-# Github Scrape
-
-[![PyPI version](https://img.shields.io/pypi/v/github-scrape.svg)](https://pypi.org/project/github-scrape/)
-[![Python version](https://img.shields.io/pypi/pyversions/github-scrape.svg)](https://pypi.org/project/github-scrape/)
-[![Tests](https://img.shields.io/badge/tests-passing-green.svg)](https://github.com/Vamsiindugu/Github-Scrape/actions)
+[![PyPI](https://img.shields.io/pypi/v/github-scrape?color=blue)](https://pypi.org/project/github-scrape/)
+[![Python](https://img.shields.io/badge/python-3.12%2B-blue)](https://pypi.org/project/github-scrape/)
+[![Tests](https://github.com/Vamsiindugu/Github-Scrape/workflows/CI/badge.svg)](https://github.com/Vamsiindugu/Github-Scrape/actions)
+[![Coverage](https://img.shields.io/badge/coverage-85%25-green)](https://github.com/Vamsiindugu/Github-Scrape/actions)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**⚡ Browse, search & download files from GitHub repos without cloning**
+**Browse, search & download files from GitHub repos — without cloning**
 
-*A fast, beautiful TUI for cherry-picking exactly what you need from any repository*
+*A fast terminal UI for cherry-picking exactly what you need*
 
-![demo](Demo.png)
+[Installation](#installation) • [Usage](#usage) • [Features](#features) • [Contributing](#contributing)
 
+</div>
 
----
-
-## 📋 Table of Contents
-
-- [🎯 What Makes It Special](#-what-makes-it-special)
-- [✨ Features](#-features)
-- [🏗️ Architecture](#️-architecture)
-- [🚀 Installation](#-installation)
-- [📖 Usage](#-usage)
-- [⌨️ Keyboard Shortcuts](#️-keyboard-shortcuts)
-- [⚙️ Configuration](#️-configuration)
-- [🤝 Contributing](#-contributing)
-- [📄 License](#-license)
+![Demo](Demo.png)
 
 ---
 
-## 🎯 What Makes It Special
-
-**github-scrape** is a *terminal-based file browser* that lets you:
-
-- Browse **any public or private** GitHub repository interactively
-- **Fuzzy search** through thousands of files instantly
-- **Download only what you need** — no more `git clone` + `rm -rf`
-- Navigate with **beautiful TUI** powered by [Textual](https://github.com/Textualize/textual)
-
-> 💡 *Built with Python 3.12+, powered by `asyncio` and designed for speed*
-
----
-
-## ✨ Features
-
-| Feature | Description |
-|---------|-------------|
-| 🔍 **Fuzzy Search** | Find files instantly with `rapidfuzz` matching |
-| 📊 **File Preview** | View file contents before downloading |
-| 📦 **Batch Download** | Select multiple files & folders, download in parallel |
-| 🔐 **Private Repo Support** | Works with your GitHub token |
-| 💾 **LFS Detection** | Warns about Git LFS files |
-| 🎨 **Dual Themes** | Toggle between emoji 📁 and ASCII `[D]` icons |
-| 📂 **Smart Paths** | Creates directories matching repository structure |
-| ⚡ **Async I/O** | Concurrent downloads with semaphore control |
-
----
-
-## 🏗️ Architecture
-
-```
-github-scrape/
-├── src/github_scrape/
-│   ├── __init__.py        # Package entry point
-│   ├── api.py             # GitHub API client (httpx + asyncio)
-│   ├── cli.py             # Typer CLI interface
-│   ├── config.py          # User settings (TOML)
-│   ├── downloader.py      # Async file downloads
-│   ├── tui.py             # Textual TUI screens
-│   └── utils.py           # URL parsing & sanitization
-├── tests/                 # 110+ tests (pytest)
-└── .github/workflows/     # CI/CD pipeline
-```
-
-**Tech Stack:**
-| Component | Technology |
-|-----------|------------|
-| CLI | `typer` with Rich formatting |
-| TUI | `textual` reactive framework |
-| HTTP | `httpx` async client |
-| Testing | `pytest` + `respx` + `pytest-asyncio` |
-
----
-
-## 🚀 Installation
-
-### Prerequisites
-
-- Python **3.12 or higher**
-- pip or pipx
-
-### Quick Install
+## Quick Start
 
 ```bash
-# Using pipx (recommended)
+# Install
 pipx install github-scrape
 
-# Using pip
+# Run — that's it
+github-scrape
+
+# Or go directly to a repo
+github-scrape python/cpython
+```
+
+---
+
+## Why github-scrape?
+
+| You want to... | With git | With github-scrape |
+|---------------|----------|-------------------|
+| Grab one file from a repo | `git clone` → find file → `rm -rf` | Select → Download ✓ |
+| Browse a large repo | Clone 500MB | Browse instantly |
+| Search files | `find . -name "*.py"` | Type `/query` |
+| View before downloading | Open browser | Built-in preview |
+
+---
+
+## Installation
+
+```bash
+# Recommended: pipx (isolated environment)
+pipx install github-scrape
+
+# Or with pip
 pip install github-scrape
 ```
 
-### Development Setup
-
-```bash
-# Clone repository
-git clone https://github.com/Vamsiindugu/Github-Scrape.git
-cd Github-Scrape
-
-# Create virtual environment
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-
-# Install in editable mode
-pip install -e ".[dev]"
-
-# Run tests
-pytest tests/ -v
-```
+Requires Python 3.12+
 
 ---
 
-## 📖 Usage
+## Usage
 
-### 🎬 Interactive Mode
-
-Launch the TUI with no arguments:
-
+### Launch TUI
 ```bash
 github-scrape
 ```
 
-**Then:**
-1. Enter a URL or shorthand (`owner/repo`)
-2. Press `Tab` to auto-fill `https://github.com/`
-3. Browse with arrow keys, toggle selection with `Space`
-4. Press `d` to download
+Then: Enter repo URL → Browse → Press `d` to download
 
-### ⚡ Direct Mode
-
+### Direct to repo
 ```bash
-# Browse specific repo
-github-scrape https://github.com/python/cpython
+# Full URL or shorthand
+github-scrape facebook/react
+github-scrape https://github.com/torvalds/linux
 
-# Use shorthand
-github-scrape python/cpython
-
-# With options
-github-scrape python/cpython --token YOUR_TOKEN --cwd --no-folder
+# Private repos
+github-scrape owner/private-repo --token YOUR_GITHUB_TOKEN
 ```
 
-### 🔧 Command Reference
+### Configuration
+```bash
+# Save your GitHub token
+github-scrape config set token ghp_xxxxxxxxxxx
 
-| Command | Description |
-|---------|-------------|
-| `github-scrape` | Launch interactive TUI |
-| `github-scrape <url>` | Browse specific repository |
-| `github-scrape config set token <TOKEN>` | Save GitHub token |
-| `github-scrape config set path <PATH>` | Set download directory |
-| `github-scrape config list` | Show current settings |
-| `github-scrape config unset token` | Remove saved token |
-
----
-
-## ⌨️ Keyboard Shortcuts
-
-### Navigation
-
-| Key | Action |
-|-----|--------|
-| `↑/↓` or `j/k` | Move cursor up/down |
-| `Enter` or `l` | Open folder / file |
-| `h` or `Backspace` | Go to parent folder |
-| `g` / `Home` | Jump to first item |
-| `G` / `End` | Jump to last item |
-
-### Selection
-
-| Key | Action |
-|-----|--------|
-| `Space` | Toggle file selection |
-| `a` | Select all visible files |
-| `u` | Unselect all |
-
-### Search
-
-| Key | Action |
-|-----|--------|
-| `/` | Focus search bar |
-| `Escape` | Clear search / exit search |
-| `Ctrl+U` | Clear search input |
-
-### Actions
-
-| Key | Action |
-|-----|--------|
-| `d` | Download selected files |
-| `i` | Toggle emoji ↔ ASCII icons |
-| `o` | Open download folder |
-| `q` | Quit |
-| `Ctrl+C` | Force quit |
-
----
-
-## ⚙️ Configuration
-
-### Config File Location
-
-| OS | Path |
-|----|------|
-| Linux/macOS | `~/.config/github-scrape/config.toml` |
-| Windows | `%APPDATA%\github-scrape\config.toml` |
-
-### Available Settings
-
-```toml
-[github]
-token = "ghp_xxxxxxxxxxxxxxxxxxxx"
-
-[download]
-default_path = "/home/user/Downloads/github-scrape"
+# Set default download path
+github-scrape config set path ~/Downloads/repos
 ```
 
-### Getting a GitHub Token
+---
 
-1. Go to **Settings → Developer settings → Personal access tokens**
-2. Generate a new token with `repo` scope
-3. Save it: `github-scrape config set token YOUR_TOKEN`
+## Features
+
+- ⚡ **Fuzzy search** — Find files instantly
+- 📊 **Preview pane** — View content before downloading
+- 📦 **Batch select** — Download multiple files/folders
+- 🔐 **Private repos** — GitHub token support
+- 💾 **Smart paths** — Preserves repo structure
+- 🎨 **Dual themes** — Emoji 📁 or ASCII `[D]` icons
+- ⚡ **Async I/O** — Parallel downloads
 
 ---
 
-## 🤝 Contributing
+## Keyboard Shortcuts
 
-Contributions are welcome! Please follow these steps:
-
-1. **Fork** the repository
-2. **Clone** your fork: `git clone https://github.com/YOUR_USERNAME/Github-Scrape.git`
-3. **Create** a feature branch: `git checkout -b feature/amazing-feature`
-4. **Make** your changes
-5. **Run** quality checks:
-   ```bash
-   # Linting
-   ruff check src/github_scrape tests/
-
-   # Type checking
-   mypy src/github_scrape
-
-   # Tests
-   pytest tests/ -v
-   ```
-6. **Commit** with clear messages: `git commit -m "feat: add amazing feature"`
-7. **Push** to your fork: `git push origin feature/amazing-feature`
-8. **Open** a Pull Request
-
-### Development Guidelines
-
-| Quality Gate | Command | Required |
-|--------------|---------|----------|
-| Linting | `ruff check .` | ✅ |
-| Type checking | `mypy src/github_scrape` | ✅ |
-| Tests | `pytest tests/` | ✅ |
-| Coverage | >80% | ✅ |
+| Navigation | Selection | Actions |
+|-----------|-----------|---------|
+| `↑/↓` or `j/k` — Move | `Space` — Toggle select | `d` — Download |
+| `Enter`/`l` — Open | `a` — Select all | `i` — Toggle theme |
+| `h`/`Backspace` — Up | `u` — Unselect all | `o` — Open folder |
+| `g`/`G` — First/last | | `q` — Quit |
+| `/` — Search | | `Ctrl+C` — Force quit |
 
 ---
 
-## 📊 Testing
+## Development
 
 ```bash
-# Run all tests
+git clone https://github.com/Vamsiindugu/Github-Scrape.git
+cd Github-Scrape
+
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -e ".[dev]"
+
+# Run tests
 pytest tests/ -v
 
-# Run with coverage
-pytest tests/ --cov=github_scrape --cov-report=html
-
-# Run specific test file
-pytest tests/test_tui.py -v
+# Run checks
+ruff check src/ && mypy src/
 ```
 
-**Current Coverage:** 110+ tests passing, 8 TUI integration tests skipped.
+---
+
+## Troubleshooting
+
+**"No module named github_scrape"**
+→ Use `pipx` instead of `pip`
+
+**"Rate limit exceeded"**
+→ Set a GitHub token: `github-scrape config set token TOKEN`
+
+**"Permission denied" on download**
+→ Check write permissions on download path
 
 ---
 
-## 🙏 Acknowledgments
+## Tech Stack
 
-- **[Textual](https://github.com/Textualize/textual)** — The incredible TUI framework
-- **[Typer](https://github.com/tiangolo/typer)** — Beautiful CLI interfaces
-- **[Rich](https://github.com/Textualize/rich)** — Terminal formatting
-- **[ghgrab](https://github.com/abhixdd/ghgrab)** — Original inspiration
-
----
-
-## 📄 License
-
-Distributed under the **MIT License**. See [LICENSE](LICENSE) for details.
+| Component | Library |
+|-----------|---------|
+| CLI | [Typer](https://github.com/tiangolo/typer) |
+| TUI | [Textual](https://github.com/Textualize/textual) |
+| HTTP | [httpx](https://github.com/encode/httpx) |
+| Search | [rapidfuzz](https://github.com/maxbachmann/rapidfuzz) |
 
 ---
 
-<div align="center">
+## License
 
-**Crafted with 💙 by [Vamsi Indugu](https://github.com/Vamsiindugu)**
-
-</div>
+MIT © [Vamsi Indugu](https://github.com/Vamsiindugu)
