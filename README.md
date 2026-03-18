@@ -140,9 +140,13 @@ github-scrape
 ```
 
 **Then:**
+
 1️⃣ Enter a URL or shorthand (`owner/repo`)
+
 2️⃣ Press `Tab` to auto-fill `https://github.com/`
+
 3️⃣ Browse with arrow keys, toggle selection with `Space`
+
 4️⃣ Press `d` to download
 
 ### ⚡ Direct Mode
