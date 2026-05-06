@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "github-scrape-project"
-version = "0.1.1"
+version = "0.1.2"
 description = "Browse, search, and download files from GitHub repos in your terminal."
 readme = "README.md"
 license = { text = "MIT" }
@@ -22,6 +22,9 @@ dependencies = [
 
 [project.scripts]
 github-scrape = "github_scrape.cli:app"
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "README.md", "LICENSE", "pyproject.toml"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/github_scrape"]
