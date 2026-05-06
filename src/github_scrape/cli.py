@@ -1,7 +1,7 @@
 import asyncio
 import signal
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 import typer
 from rich.console import Console
@@ -98,7 +98,7 @@ def main(
     token: str | None = typer.Option(None, "--token", "-t", help="GitHub token"),
     cwd: bool = typer.Option(False, "--cwd", help="Download to current directory"),
     no_folder: bool = typer.Option(False, "--no-folder", help="Don't create repo subfolder"),
-    version: Optional[bool] = typer.Option(
+    version: bool | None = typer.Option(
         None, "--version", "-v", callback=version_callback, is_eager=True, help="Show version and exit"
     ),
 ) -> None:
