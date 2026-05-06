@@ -57,7 +57,7 @@ class GitHubClient:
     def __init__(self, token: str | None = None) -> None:
         headers = {
             "Accept": "application/vnd.github.v3+json",
-            "User-Agent": "github-scrape/0.1.0",
+            "User-Agent": "github-scrape-project/0.1.1",
         }
         if token:
             headers["Authorization"] = f"Bearer {token}"
@@ -71,7 +71,7 @@ class GitHubClient:
         if resp.status_code == 404:
             raise NotFoundError(f"{context} not found or is private.", 404)
         if resp.status_code == 401:
-            raise AuthError("Invalid token. Run: github-scrape config set token <TOKEN>", 401)
+            raise AuthError("Invalid token. Run: github-scrape config set token <TOKEN> (Github Scrape Project)", 401)
         if resp.status_code == 403:
             remaining = resp.headers.get("X-RateLimit-Remaining", "unknown")
             if remaining == "0":

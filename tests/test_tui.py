@@ -119,9 +119,9 @@ class TestBrowseScreen:
                     await pilot.pause(1)
                     if isinstance(app.screen, BrowseScreen):
                         screen = app.screen
-                        initial = screen.use_emoji
+                        initial = screen.emoji_icons
                         await pilot.press("i")
-                        assert screen.use_emoji != initial
+                        assert screen.emoji_icons != initial
                 except Exception:
                     pass  # Allow for test environment limitations
 
@@ -268,21 +268,22 @@ class TestSearchAndNavigation:
 
                     if isinstance(app.screen, BrowseScreen):
                         screen = app.screen
-                        # Initially search is hidden
-                        assert not screen._search_visible
+                        search_container = screen.query_one("#search-container")
+                        # Initially search is hidden (no 'visible' class)
+                        assert "visible" not in search_container.classes
 
                         # Press '/' to show search
                         await pilot.press("/")
                         await pilot.pause(0.5)
 
                         # Search should be visible
-                        assert screen._search_visible
+                        assert "visible" in search_container.classes
 
                         # Press Escape to close search
                         await pilot.press("escape")
                         await pilot.pause(0.5)
 
                         # Search should be hidden
-                        assert not screen._search_visible
+                        assert "visible" not in search_container.classes
                 except Exception:
                     pass

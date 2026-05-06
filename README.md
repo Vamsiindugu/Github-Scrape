@@ -1,9 +1,9 @@
 <div align="center">
 
-# Github Scrape
+# Github Scrape Project
 
-[![PyPI version](https://img.shields.io/pypi/v/github-scrape.svg)](https://pypi.org/project/github-scrape/)
-[![Python version](https://img.shields.io/pypi/pyversions/github-scrape.svg)](https://pypi.org/project/github-scrape/)
+[![PyPI version](https://img.shields.io/pypi/v/github-scrape-project.svg)](https://pypi.org/project/github-scrape-project/)
+[![Python version](https://img.shields.io/pypi/pyversions/github-scrape-project.svg)](https://pypi.org/project/github-scrape-project/)
 [![Tests](https://img.shields.io/badge/tests-passing-green.svg)](https://github.com/Vamsiindugu/Github-Scrape/actions)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -33,7 +33,7 @@
 
 ## 📌 Overview
 
-**Github Scrape** is a *terminal-based file browser* that lets you:
+**Github Scrape Project** is a *terminal-based file browser* that lets you:
 
 - Browse **any public or private** GitHub repository interactively
 - **Fuzzy search** through thousands of files instantly
@@ -62,7 +62,7 @@
 ## 🏗️ Architecture
 
 ```
-github-scrape/
+github-scrape-project/
 ├── src/github_scrape/
 │   ├── __init__.py      # Package entry point
 │   ├── api.py           # GitHub API client (httpx + asyncio)
@@ -97,10 +97,10 @@ github-scrape/
 
 ```bash
 # Using pipx (recommended)
-pipx install github-scrape
+pipx install github-scrape-project
 
 # Using pip
-pip install github-scrape
+pip install github-scrape-project
 ```
 
 ### Development Setup
@@ -221,8 +221,8 @@ github-scrape python/cpython --token YOUR_TOKEN --cwd --no-folder
 
 | OS | Path |
 |----|------|
-| Linux/macOS | `~/.config/github-scrape/config.toml` |
-| Windows | `%APPDATA%\github-scrape\config.toml` |
+| Linux/macOS | `~/.config/github-scrape-project/config.toml` |
+| Windows | `%APPDATA%\github-scrape-project\config.toml` |
 
 ### Available Settings
 
@@ -231,7 +231,7 @@ github-scrape python/cpython --token YOUR_TOKEN --cwd --no-folder
 token = "ghp_xxxxxxxxxxxxxxxxxxxx"
 
 [download]
-default_path = "/home/user/Downloads/github-scrape"
+default_path = "/home/user/Downloads/github-scrape-project"
 ```
 
 ### Getting a GitHub Token

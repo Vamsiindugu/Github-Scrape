@@ -1,4 +1,4 @@
-"""Textual TUI for github-scrape."""
+"""Textual TUI for github-scrape-project."""
 
 from __future__ import annotations
 
@@ -393,6 +393,19 @@ class BrowseScreen(Screen[None]):
         self._refresh_all_visible_nodes()
         self._update_status()
 
+    @on(Tree.NodeSelected, "#file-tree")
+    def on_tree_node_selected(self, event: Tree.NodeSelected[FileNodeData]) -> None:
+        """Handle node selection (Enter or Click)."""
+        node = event.node
+        if node is None or node.data is None:
+            return
+
+        if node.data.repo_file.type == "tree":
+            folder_name = node.data.repo_file.path.split("/")[-1]
+            self.current_path.append(folder_name)
+            self._build_tree()
+            self._update_status()
+
     def action_toggle_icons(self) -> None:
         self.emoji_icons = not self.emoji_icons
         self._build_tree()
@@ -593,7 +606,7 @@ class PreviewScreen(Screen[None]):
 
 
 class GitHubScrapeTUI(App[None]):
-    TITLE = "github-scrape"
+    TITLE = "Github Scrape Project"
 
     CSS = """
     Screen {

@@ -4,7 +4,7 @@ from typing import Any
 import platformdirs
 import tomlkit
 
-CONFIG_DIR: Path = Path(platformdirs.user_config_dir("github-scrape"))
+CONFIG_DIR: Path = Path(platformdirs.user_config_dir("github-scrape-project"))
 CONFIG_FILE: Path = CONFIG_DIR / "config.toml"
 
 _config_cache: dict[str, Any] | None = None

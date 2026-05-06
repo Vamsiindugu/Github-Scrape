@@ -11,7 +11,7 @@ from github_scrape import config
 from github_scrape.tui import GitHubScrapeTUI
 from github_scrape.utils import parse_github_url
 
-app = typer.Typer(name="github-scrape", help="Browse and download GitHub repo files.")
+app = typer.Typer(name="github-scrape", help="Browse and download GitHub repo files (Github Scrape Project).")
 config_app = typer.Typer(name="config", help="Manage configuration.")
 app.add_typer(config_app)
 
@@ -74,14 +74,14 @@ def config_unset(key: str) -> None:
 def _print_welcome() -> None:
     """Print welcome message with ASCII art."""
     console.print()
-    console.print("[bold #58a6ff] ██████╗ ██╗████████╗██╗ ██╗██╗ ██╗██████╗ ███████╗ ██████╗██████╗ █████╗ ██████╗ ███████╗[/bold #58a6ff]")  # noqa: E501
-    console.print("[bold #58a6ff]██╔════╝ ██║╚══██╔══╝██║ ██║██║ ██║██╔══██╗ ██╔════╝██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝[/bold #58a6ff]")  # noqa: E501
-    console.print("[bold #58a6ff]██║ ███╗██║ ██║ ███████║██║ ██║██████╔╝ ███████╗██║ ██████╔╝███████║██████╔╝█████╗[/bold #58a6ff]")  # noqa: E501
-    console.print("[bold #58a6ff]██║ ██║██║ ██║ ██╔══██║██║ ██║██╔══██╗ ╚════██║██║ ██╔══██╗██╔══██║██╔═══╝ ██╔══╝[/bold #58a6ff]")  # noqa: E501
-    console.print("[bold #58a6ff]╚██████╔╝██║ ██║ ██║ ██║╚██████╔╝██████╔╝ ███████║╚██████╗██║ ██║██║ ██║██║ ███████╗[/bold #58a6ff]")  # noqa: E501
-    console.print("[bold #58a6ff] ╚═════╝ ╚═╝ ╚═╝ ╚═╝ ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝ ╚═════╝╚═╝ ╚═╝╚═╝ ╚═╝╚═╝ ╚══════╝[/bold #58a6ff]")  # noqa: E501
+    console.print("[bold #58a6ff] ██████╗ ██╗████████╗██╗  ██╗██╗   ██╗██████╗  ███████╗ ██████╗██████╗  █████╗ ██████╗ ███████╗[/bold #58a6ff]")  # noqa: E501
+    console.print("[bold #58a6ff]██╔════╝ ██║╚══██╔══╝██║  ██║██║   ██║██╔══██╗ ██╔════╝██╔════╝██╔═ ██╗██╔══██╗██╔══██╗██╔════╝[/bold #58a6ff]")  # noqa: E501
+    console.print("[bold #58a6ff]██║  ███╗██║   ██║   ███████║██║   ██║██████╔╝ ███████╗██║     ██████╔╝███████║██████╔╝█████╗  [/bold #58a6ff]")  # noqa: E501
+    console.print("[bold #58a6ff]██║   ██║██║   ██║   ██╔══██║██║   ██║██╔══██╗ ╚════██║██║     ██╔══██╗██╔══██║██╔═══╝ ██╔══╝  [/bold #58a6ff]")  # noqa: E501
+    console.print("[bold #58a6ff]╚██████╔╝██║   ██║   ██║  ██║╚██████╔╝██████╔╝ ███████║╚██████╗██║  ██║██║  ██║██║     ███████╗[/bold #58a6ff]")  # noqa: E501
+    console.print("[bold #58a6ff] ╚═════╝ ╚═╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚═════╝  ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚══════╝[/bold #58a6ff]")  # noqa: E501
     console.print()
-    console.print("[bold #79c0ff]           github-scrape[/bold #79c0ff] [dim]—[/dim] Download files from GitHub without cloning")
+    console.print("[bold #79c0ff]       Github Scrape Project[/bold #79c0ff] [dim]—[/dim] Download files from GitHub without cloning")
     console.print()
 
 
@@ -112,10 +112,7 @@ def main(
     signal.signal(signal.SIGINT, signal_handler)
 
     try:
-        _print_welcome()
-
         if url is None:
-            console.print("[italic]Launching interactive browser... Press Ctrl+C to quit anytime[/italic]\n")
             tui_app = GitHubScrapeTUI(
                 token=state.token,
                 cwd=state.cwd,
@@ -124,7 +121,6 @@ def main(
         else:
             try:
                 owner, repo, branch, subpath = parse_github_url(url)
-                console.print(f"[green]Opening {owner}/{repo}@{branch or 'default'}...[/green]\n")
                 tui_app = GitHubScrapeTUI(
                     url=url,
                     token=state.token,

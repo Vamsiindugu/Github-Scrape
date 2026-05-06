@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "C:\\Users\\ROGLOVER\\Documents\\Github Scrape\\Github-Scrape\\logs\\.900edb4d59948e4996669b64331d126c9d2a1afc-audit.json",
+    "files": [
+        {
+            "date": 1778064913219,
+            "name": "C:\\Users\\ROGLOVER\\Documents\\Github Scrape\\Github-Scrape\\logs\\mcp-puppeteer-2026-05-06.log",
+            "hash": "00b595133b846c93fa19e755caf2887409d07b3b8a815cf8de766216bf6d4814"
+        }
+    ],
+    "hashType": "sha256"
+}

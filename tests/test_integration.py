@@ -1,4 +1,4 @@
-"""Integration tests for github-scrape."""
+"""Integration tests for github-scrape-project."""
 
 from pathlib import Path
 
@@ -312,7 +312,7 @@ class TestEndToEnd:
     def test_full_cli_help(self) -> None:
         result = runner.invoke(app, ["--help"])
         assert result.exit_code == 0
-        assert "github-scrape" in result.stdout
+        assert "Github Scrape Project" in result.stdout
         assert "config" in result.stdout
 
         result = runner.invoke(app, ["config", "--help"])
