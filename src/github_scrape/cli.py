@@ -1,13 +1,13 @@
 import asyncio
 import signal
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Optional
 
 import typer
 from rich.console import Console
 from rich.table import Table
 
-from github_scrape import config
+from github_scrape import __version__, config
 from github_scrape.tui import GitHubScrapeTUI
 from github_scrape.utils import parse_github_url
 
@@ -16,6 +16,12 @@ config_app = typer.Typer(name="config", help="Manage configuration.")
 app.add_typer(config_app)
 
 console = Console()
+
+
+def version_callback(value: bool) -> None:
+    if value:
+        console.print(f"github-scrape version: [bold cyan]{__version__}[/bold cyan]")
+        raise typer.Exit()
 
 
 @dataclass
@@ -92,6 +98,9 @@ def main(
     token: str | None = typer.Option(None, "--token", "-t", help="GitHub token"),
     cwd: bool = typer.Option(False, "--cwd", help="Download to current directory"),
     no_folder: bool = typer.Option(False, "--no-folder", help="Don't create repo subfolder"),
+    version: Optional[bool] = typer.Option(
+        None, "--version", "-v", callback=version_callback, is_eager=True, help="Show version and exit"
+    ),
 ) -> None:
     if ctx.invoked_subcommand is not None:
         return
