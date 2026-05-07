@@ -129,7 +129,7 @@ class GitHubClient:
     def __init__(self, token: str | None = None, cache_ttl: float = 300.0) -> None:
         headers = {
             "Accept": "application/vnd.github.v3+json",
-            "User-Agent": "github-scrape/0.1.0",
+            "User-Agent": "github-scrape/0.2.0",
         }
         if token:
             headers["Authorization"] = f"Bearer {token}"

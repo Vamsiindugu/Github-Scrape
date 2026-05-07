@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "github-scrape-project"
-version = "0.1.2"
+version = "0.2.0"
 description = "Browse, search, and download files from GitHub repos in your terminal."
 readme = "README.md"
 license = { text = "MIT" }
