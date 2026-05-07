@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import signal
 from dataclasses import dataclass
 from typing import Any
@@ -7,21 +8,16 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from github_scrape import __version__, config
+from github_scrape import config
+from github_scrape.logging_cfg import setup_logging
 from github_scrape.tui import GitHubScrapeTUI
 from github_scrape.utils import parse_github_url
 
-app = typer.Typer(name="github-scrape", help="Browse and download GitHub repo files (Github Scrape Project).")
+app = typer.Typer(name="github-scrape", help="Browse and download GitHub repo files.")
 config_app = typer.Typer(name="config", help="Manage configuration.")
 app.add_typer(config_app)
 
 console = Console()
-
-
-def version_callback(value: bool) -> None:
-    if value:
-        console.print(f"github-scrape version: [bold cyan]{__version__}[/bold cyan]")
-        raise typer.Exit()
 
 
 @dataclass
@@ -29,6 +25,7 @@ class AppState:
     token: str | None = None
     cwd: bool = False
     no_folder: bool = False
+    verbose: bool = False
     shutdown_requested: bool = False
 
 
@@ -77,17 +74,61 @@ def config_unset(key: str) -> None:
         raise typer.Exit(1)
 
 
+@app.command("rate-limit")
+def rate_limit(
+    token: str | None = typer.Option(None, "--token", "-t", help="GitHub token"),
+) -> None:
+    from github_scrape.api import GitHubClient
+
+    async def _check() -> None:
+        tok = token or config.get_token()
+        async with GitHubClient(token=tok) as client:
+            limits = await client.get_rate_limit()
+            rl = client.rate_limit_info
+            table = Table(title="GitHub API Rate Limit")
+            table.add_column("Resource", style="cyan")
+            table.add_column("Limit", style="green")
+            table.add_column("Remaining", style="yellow" if rl.remaining < 100 else "green")
+            table.add_column("Reset At", style="blue")
+            table.add_row("core", str(limits["limit"]), str(limits["remaining"]), rl.reset_datetime)
+            console.print(table)
+            if rl.remaining < 10:
+                console.print(f"[yellow]Warning: Only {rl.remaining} requests remaining![/yellow]")
+
+    asyncio.run(_check())
+
+
+@app.command("cache")
+def cache_management(
+    action: str = typer.Argument("status", help="Action: status, clear"),
+) -> None:
+    if action == "status":
+        console.print("[dim]Cache is in-memory per session. No persistent cache to inspect.[/dim]")
+        console.print("Tree responses are cached for 5 minutes within a single session.")
+    elif action == "clear":
+        console.print("[green]In-memory cache is cleared on restart.[/green]")
+    else:
+        console.print(f"[red]Unknown action: {action}. Use 'status' or 'clear'.[/red]")
+        raise typer.Exit(1)
+
+
+@app.command("version")
+def show_version() -> None:
+    from github_scrape import __version__
+
+    console.print(f"github-scrape v{__version__}")
+
+
 def _print_welcome() -> None:
-    """Print welcome message with ASCII art."""
     console.print()
-    console.print("[bold #58a6ff] ██████╗ ██╗████████╗██╗  ██╗██╗   ██╗██████╗  ███████╗ ██████╗██████╗  █████╗ ██████╗ ███████╗[/bold #58a6ff]")  # noqa: E501
-    console.print("[bold #58a6ff]██╔════╝ ██║╚══██╔══╝██║  ██║██║   ██║██╔══██╗ ██╔════╝██╔════╝██╔═ ██╗██╔══██╗██╔══██╗██╔════╝[/bold #58a6ff]")  # noqa: E501
-    console.print("[bold #58a6ff]██║  ███╗██║   ██║   ███████║██║   ██║██████╔╝ ███████╗██║     ██████╔╝███████║██████╔╝█████╗  [/bold #58a6ff]")  # noqa: E501
-    console.print("[bold #58a6ff]██║   ██║██║   ██║   ██╔══██║██║   ██║██╔══██╗ ╚════██║██║     ██╔══██╗██╔══██║██╔═══╝ ██╔══╝  [/bold #58a6ff]")  # noqa: E501
-    console.print("[bold #58a6ff]╚██████╔╝██║   ██║   ██║  ██║╚██████╔╝██████╔╝ ███████║╚██████╗██║  ██║██║  ██║██║     ███████╗[/bold #58a6ff]")  # noqa: E501
-    console.print("[bold #58a6ff] ╚═════╝ ╚═╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚═════╝  ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚══════╝[/bold #58a6ff]")  # noqa: E501
+    console.print("[bold #58a6ff] ██████╗ ██╗████████╗██╗ ██╗██╗ ██╗██████╗ ███████╗ ██████╗██████╗ █████╗ ██████╗ ███████╗[/bold #58a6ff]")  # noqa: E501
+    console.print("[bold #58a6ff]██╔════╝ ██║╚══██╔══╝██║ ██║██║ ██║██╔══██╗ ██╔════╝██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝[/bold #58a6ff]")  # noqa: E501
+    console.print("[bold #58a6ff]██║ ███╗██║ ██║ ███████║██║ ██║██████╔╝ ███████╗██║ ██████╔╝███████║██████╔╝█████╗[/bold #58a6ff]")  # noqa: E501
+    console.print("[bold #58a6ff]██║ ██║██║ ██║ ██╔══██║██║ ██║██╔══██╗ ╚════██║██║ ██╔══██╗██╔══██║██╔═══╝ ██╔══╝[/bold #58a6ff]")  # noqa: E501
+    console.print("[bold #58a6ff]╚██████╔╝██║ ██║ ██║ ██║╚██████╔╝██████╔╝ ███████║╚██████╗██║ ██║██║ ██║██║ ███████╗[/bold #58a6ff]")  # noqa: E501
+    console.print("[bold #58a6ff] ╚═════╝ ╚═╝ ╚═╝ ╚═╝ ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝ ╚═════╝╚═╝ ╚═╝╚═╝ ╚═╝╚═╝ ╚══════╝[/bold #58a6ff]")  # noqa: E501
     console.print()
-    console.print("[bold #79c0ff]       Github Scrape Project[/bold #79c0ff] [dim]—[/dim] Download files from GitHub without cloning")
+    console.print("[bold #79c0ff]           github-scrape[/bold #79c0ff] [dim]—[/dim] Download files from GitHub without cloning")
     console.print()
 
 
@@ -98,14 +139,20 @@ def main(
     token: str | None = typer.Option(None, "--token", "-t", help="GitHub token"),
     cwd: bool = typer.Option(False, "--cwd", help="Download to current directory"),
     no_folder: bool = typer.Option(False, "--no-folder", help="Don't create repo subfolder"),
-    version: bool | None = typer.Option(
-        None, "--version", "-v", callback=version_callback, is_eager=True, help="Show version and exit"
-    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose logging"),
+    debug: bool = typer.Option(False, "--debug", "-d", help="Enable debug logging"),
 ) -> None:
     if ctx.invoked_subcommand is not None:
         return
 
-    state = AppState(token=token, cwd=cwd, no_folder=no_folder)
+    log_level = logging.WARNING
+    if debug:
+        log_level = logging.DEBUG
+    elif verbose:
+        log_level = logging.INFO
+    setup_logging(log_level)
+
+    state = AppState(token=token, cwd=cwd, no_folder=no_folder, verbose=verbose)
     ctx.obj = state
 
     loop = asyncio.new_event_loop()
@@ -121,7 +168,10 @@ def main(
     signal.signal(signal.SIGINT, signal_handler)
 
     try:
+        _print_welcome()
+
         if url is None:
+            console.print("[italic]Launching interactive browser... Press Ctrl+C to quit anytime[/italic]\n")
             tui_app = GitHubScrapeTUI(
                 token=state.token,
                 cwd=state.cwd,
@@ -130,6 +180,7 @@ def main(
         else:
             try:
                 owner, repo, branch, subpath = parse_github_url(url)
+                console.print(f"[green]Opening {owner}/{repo}@{branch or 'default'}...[/green]\n")
                 tui_app = GitHubScrapeTUI(
                     url=url,
                     token=state.token,
@@ -145,8 +196,6 @@ def main(
     except KeyboardInterrupt:
         console.print("\n[yellow]Interrupted by user.[/yellow]")
     finally:
-        if not shutdown_event.is_set():
-            pass
         loop.run_until_complete(loop.shutdown_asyncgens())
         loop.close()
         console.print("[dim]Goodbye![/dim]")

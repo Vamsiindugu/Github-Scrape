@@ -5,7 +5,7 @@ import pytest
 import respx
 
 from github_scrape.api import GitHubClient, RepoFile
-from github_scrape.downloader import LFS_SIGNATURES, Downloader
+from github_scrape.downloader import LFS_SIGNATURES, MANIFEST_FILENAME, Downloader, DownloadManifest
 
 
 @pytest.fixture
@@ -194,3 +194,32 @@ class TestDownloader:
         result = await downloader.download_single(file)
         assert result.success is True
         assert result.size == 0
+
+    @pytest.mark.asyncio
+    async def test_download_persists_manifest(self, client: GitHubClient, tmp_dest: Path) -> None:
+        with respx.mock:
+            respx.get("https://raw.githubusercontent.com/owner/repo/main/README.md").mock(
+                return_value=httpx.Response(200, content=b"Hello World")
+            )
+            downloader = Downloader(client, "owner", "repo", "main", tmp_dest)
+            file = RepoFile(path="README.md", type="blob", size=11, sha="abc123", url="")
+            await downloader.download_files([file])
+            manifest_path = tmp_dest / "repo" / MANIFEST_FILENAME
+            assert manifest_path.exists()
+            manifest = DownloadManifest.load(tmp_dest / "repo")
+            assert manifest is not None
+            assert manifest.is_downloaded("README.md", "abc123")
+
+    @pytest.mark.asyncio
+    async def test_download_manifest_hit_skips_file(self, client: GitHubClient, tmp_dest: Path) -> None:
+        dest_dir = tmp_dest / "repo"
+        dest_dir.mkdir(parents=True)
+        (dest_dir / "README.md").write_bytes(b"cached")
+        manifest = DownloadManifest(files={"README.md": "abc123"})
+        manifest.save(dest_dir)
+
+        downloader = Downloader(client, "owner", "repo", "main", tmp_dest)
+        file = RepoFile(path="README.md", type="blob", size=6, sha="abc123", url="")
+        result = await downloader.download_single(file)
+        assert "Skipped" in (result.error or "")
+        assert "manifest" in (result.error or "")

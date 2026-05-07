@@ -139,6 +139,30 @@ class TestConfigSetInvalidPath:
         assert "Error" in result.stdout
 
 
+class TestVersionCommand:
+    def test_version_outputs_version(self) -> None:
+        result = runner.invoke(cli.app, ["version"])
+        assert result.exit_code == 0
+        assert "v0.1.0" in result.stdout
+
+
+class TestCacheCommand:
+    def test_cache_status(self) -> None:
+        result = runner.invoke(cli.app, ["cache", "status"])
+        assert result.exit_code == 0
+        assert "in-memory" in result.stdout.lower() or "Cache" in result.stdout
+
+    def test_cache_clear(self) -> None:
+        result = runner.invoke(cli.app, ["cache", "clear"])
+        assert result.exit_code == 0
+        assert "cleared" in result.stdout.lower() or "restart" in result.stdout.lower()
+
+    def test_cache_invalid_action(self) -> None:
+        result = runner.invoke(cli.app, ["cache", "explode"])
+        assert result.exit_code == 1
+        assert "Unknown action" in result.stdout
+
+
 class TestMainIntegration:
     def test_main_no_args_launches_tui(
         self, isolated_config: Path, monkeypatch: pytest.MonkeyPatch

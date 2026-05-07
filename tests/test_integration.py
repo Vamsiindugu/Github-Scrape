@@ -312,7 +312,7 @@ class TestEndToEnd:
     def test_full_cli_help(self) -> None:
         result = runner.invoke(app, ["--help"])
         assert result.exit_code == 0
-        assert "Github Scrape Project" in result.stdout
+        assert "Browse and download" in result.stdout
         assert "config" in result.stdout
 
         result = runner.invoke(app, ["config", "--help"])

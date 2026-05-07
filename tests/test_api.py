@@ -172,3 +172,58 @@ class TestGitHubClient:
                 limits = await client.get_rate_limit()
                 assert limits["limit"] == 5000
                 assert limits["remaining"] == 4999
+
+    @pytest.mark.asyncio
+    async def test_rate_limit_info_updated_from_headers(self) -> None:
+        with respx.mock:
+            respx.get("https://api.github.com/repos/owner/repo").mock(
+                return_value=httpx.Response(
+                    200,
+                    json={"default_branch": "main"},
+                    headers={
+                        "X-RateLimit-Limit": "5000",
+                        "X-RateLimit-Remaining": "4998",
+                        "X-RateLimit-Reset": "1700000000",
+                    },
+                )
+            )
+            async with GitHubClient() as client:
+                await client.get_default_branch("owner", "repo")
+                info = client.rate_limit_info
+                assert info.limit == 5000
+                assert info.remaining == 4998
+                assert info.reset_timestamp == 1700000000
+
+    @pytest.mark.asyncio
+    async def test_tree_cache_avoids_duplicate_requests(self) -> None:
+        with respx.mock:
+            call_count = 0
+
+            def track(request: httpx.Request) -> httpx.Response:
+                nonlocal call_count
+                call_count += 1
+                return httpx.Response(
+                    200,
+                    json={"tree": [{"path": "a.txt", "type": "blob", "size": 5, "sha": "x"}], "truncated": False},
+                )
+
+            respx.get("https://api.github.com/repos/owner/repo/git/trees/main?recursive=1").mock(
+                side_effect=track
+            )
+            async with GitHubClient() as client:
+                tree1 = await client.get_tree("owner", "repo", "main")
+                tree2 = await client.get_tree("owner", "repo", "main")
+                assert tree1 is tree2
+                assert call_count == 1
+                assert client.cache.size == 1
+
+    @pytest.mark.asyncio
+    async def test_rate_limit_error_has_retry_after(self) -> None:
+        with respx.mock:
+            respx.get("https://api.github.com/repos/owner/repo/git/trees/main?recursive=1").mock(
+                return_value=httpx.Response(429, headers={"Retry-After": "30"})
+            )
+            async with GitHubClient() as client:
+                with pytest.raises(RateLimitError) as exc_info:
+                    await client.get_tree("owner", "repo", "main")
+                assert exc_info.value.retry_after == 30
